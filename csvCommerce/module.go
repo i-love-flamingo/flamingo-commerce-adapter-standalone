@@ -1,7 +1,7 @@
-package csvProductService
+package csvCommerce
 
 import (
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvProductService/infrastructure"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure"
 	categorydomain "flamingo.me/flamingo-commerce/category/domain"
 	productdomain "flamingo.me/flamingo-commerce/product/domain"
 	searchdomain "flamingo.me/flamingo-commerce/search/domain"
