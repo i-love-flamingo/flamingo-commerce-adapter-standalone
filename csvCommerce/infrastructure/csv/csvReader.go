@@ -25,6 +25,8 @@ func ReadProductCSV(csvFile string) ([]ProductCsvRowDto, error) {
 
 	// Create a new reader.
 	r := csv.NewReader(bufio.NewReader(f))
+	r.LazyQuotes = true
+	r.Comma = ';'
 	rowCount := 0
 	isFirstRow := true
 	for {
@@ -44,7 +46,9 @@ func ReadProductCSV(csvFile string) ([]ProductCsvRowDto, error) {
 
 		row := make(map[string]string)
 		for k, colName := range headerRow {
-			row[colName] = record[k]
+			if len(record) > k {
+				row[colName] = record[k]
+			}
 		}
 		csvContents = append(csvContents, row)
 	}

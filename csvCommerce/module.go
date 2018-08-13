@@ -2,6 +2,7 @@ package csvCommerce
 
 import (
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productRepository"
 	categorydomain "flamingo.me/flamingo-commerce/category/domain"
 	productdomain "flamingo.me/flamingo-commerce/product/domain"
 	searchdomain "flamingo.me/flamingo-commerce/search/domain"
@@ -31,6 +32,14 @@ type (
 // Configure DI
 func (module *ProductClientModule) Configure(injector *dingo.Injector) {
 	injector.Bind((*productdomain.ProductService)(nil)).To(infrastructure.ProductServiceAdapter{})
+
+	injector.Bind((*productRepository.InMemoryProductRepository)(nil)).ToProvider(func(provider *productRepository.InMemoryProductRepositoryProvider) *productRepository.InMemoryProductRepository {
+		rep, err := provider.GetForCurrentLocale()
+		if err != nil {
+			panic("cannot get InMemoryProductRepository")
+		}
+		return rep
+	}).In(dingo.ChildSingleton)
 }
 
 // Configure DI

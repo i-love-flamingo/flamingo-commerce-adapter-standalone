@@ -2,21 +2,15 @@ package infrastructure
 
 import (
 	"context"
-	"errors"
-	"math/rand"
 
-	"fmt"
-	"strconv"
-	"time"
-
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productRepository"
 	"flamingo.me/flamingo-commerce/product/domain"
 )
 
 type (
 	// ProductService interface
 	ProductServiceAdapter struct {
-		// Get a product
-
+		InMemoryProductRepositoryProvider *productRepository.InMemoryProductRepositoryProvider `inject:""`
 	}
 )
 
@@ -31,7 +25,15 @@ var (
 
 // Get returns a product struct
 func (ps *ProductServiceAdapter) Get(ctx context.Context, marketplaceCode string) (domain.BasicProduct, error) {
-	//defer ctx.Profile("service", "get product "+foreignId)()
+	rep, err := ps.InMemoryProductRepositoryProvider.GetForCurrentLocale()
+	if err != nil {
+		return nil, err
+	}
+	return rep.FindByMarketplaceCode(marketplaceCode)
+}
+
+//defer ctx.Profile("service", "get product "+foreignId)()
+/*
 
 	if marketplaceCode == "fake_configurable" {
 		product := ps.getFakeConfigurable(marketplaceCode)
@@ -208,3 +210,4 @@ func (ps *ProductServiceAdapter) getPrice(defaultP float64, discounted float64) 
 	price.ActiveBaseUnit = "ml"
 	return price
 }
+*/
