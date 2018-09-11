@@ -92,7 +92,7 @@ func (f *InMemoryProductRepositoryFactory) validateRow(row map[string]string, lo
 	additionalRequiredCols = append(additionalRequiredCols, []string{"marketplaceCode", "retailerCode", "title-" + locale, "metaKeywords-" + locale, "shortDescription-" + locale, "description-" + locale, "price-" + currency}...)
 	for _, requiredAttribute := range additionalRequiredCols {
 		if _, ok := row[requiredAttribute]; !ok {
-			return errors.New("marketplaceCode" + " Is missing (required attribute)")
+			return errors.New("\"" + requiredAttribute + "\"" + " Is missing (required attribute)")
 		}
 	}
 	return nil
