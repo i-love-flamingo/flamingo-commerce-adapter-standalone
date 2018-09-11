@@ -3,14 +3,14 @@ package infrastructure
 import (
 	"context"
 
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productRepository"
+	"flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
 	"flamingo.me/flamingo-commerce/product/domain"
 )
 
 type (
 	// ProductService interface
 	ProductServiceAdapter struct {
-		InMemoryProductRepository *productRepository.InMemoryProductRepository `inject:""`
+		InMemoryProductRepository *infrastructure.InMemoryProductRepository `inject:""`
 	}
 )
 

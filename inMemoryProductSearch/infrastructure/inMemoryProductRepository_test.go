@@ -1,4 +1,4 @@
-package productRepository_test
+package infrastructure
 
 import (
 	"testing"

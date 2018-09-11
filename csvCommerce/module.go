@@ -4,6 +4,7 @@ import (
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure"
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productRepository"
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/interfaces/controller"
+	inMemoryProductSearchInfrastructure "flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
 	categorydomain "flamingo.me/flamingo-commerce/category/domain"
 	productdomain "flamingo.me/flamingo-commerce/product/domain"
 	searchdomain "flamingo.me/flamingo-commerce/search/domain"
@@ -35,13 +36,14 @@ type (
 func (module *ProductClientModule) Configure(injector *dingo.Injector) {
 	injector.Bind((*productdomain.ProductService)(nil)).To(infrastructure.ProductServiceAdapter{})
 
-	injector.Bind((*productRepository.InMemoryProductRepository)(nil)).ToProvider(func(provider *productRepository.InMemoryProductRepositoryProvider) *productRepository.InMemoryProductRepository {
-		rep, err := provider.GetForCurrentLocale()
-		if err != nil {
-			panic("cannot get InMemoryProductRepository")
-		}
-		return rep
-	}).In(dingo.ChildSingleton)
+	injector.Bind((*inMemoryProductSearchInfrastructure.InMemoryProductRepository)(nil)).ToProvider(
+		func(provider *productRepository.InMemoryProductRepositoryProvider) *inMemoryProductSearchInfrastructure.InMemoryProductRepository {
+			rep, err := provider.GetForCurrentLocale()
+			if err != nil {
+				panic("cannot get InMemoryProductRepository")
+			}
+			return rep
+		}).In(dingo.ChildSingleton)
 
 	router.Bind(injector, new(routes))
 }

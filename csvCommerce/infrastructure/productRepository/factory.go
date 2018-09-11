@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/csv"
+	inMemoryProductSearchInfrastructure "flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
 	"flamingo.me/flamingo-commerce/product/domain"
 	"flamingo.me/flamingo/framework/flamingo"
 )
@@ -16,15 +17,25 @@ type (
 	InMemoryProductRepositoryFactory struct {
 		Logger flamingo.Logger `inject:""`
 	}
+	InMemoryProductRepositoryProvider struct {
+		InMemoryProductRepositoryFactory *InMemoryProductRepositoryFactory `inject:""`
+		Logger                           flamingo.Logger                   `inject:""`
+		Locale                           string                            `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.locale"`
+		Currency                         string                            `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.currency"`
+		ProductCSVPath                   string                            `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.productCsvPath"`
+	}
 )
 
-func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, locale string, currency string) (*InMemoryProductRepository, error) {
+//TODO - use map with lock (sync map) https://github.com/golang/go/blob/master/src/sync/map.go
+var buildedRepositoryByLocale = make(map[string]*inMemoryProductSearchInfrastructure.InMemoryProductRepository)
+
+func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, locale string, currency string) (*inMemoryProductSearchInfrastructure.InMemoryProductRepository, error) {
 	rows, err := csv.ReadProductCSV(csvFile)
 	if err != nil {
 		return nil, err
 	}
 	//todo use Dingo provider
-	newRepo := InMemoryProductRepository{}
+	newRepo := inMemoryProductSearchInfrastructure.InMemoryProductRepository{}
 
 	for rowK, row := range rows {
 		if row["productType"] == "simple" {
@@ -32,7 +43,7 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 			if err != nil {
 				f.Logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
 			}
-			newRepo.add(*product)
+			newRepo.Add(*product)
 		}
 	}
 	for rowK, row := range rows {
@@ -41,14 +52,14 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 			if err != nil {
 				f.Logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
 			}
-			newRepo.add(*product)
+			newRepo.Add(*product)
 		}
 	}
 
 	return &newRepo, nil
 }
 
-func (f *InMemoryProductRepositoryFactory) buildConfigurableProduct(repo InMemoryProductRepository, row map[string]string, locale string, currency string) (*domain.ConfigurableProduct, error) {
+func (f *InMemoryProductRepositoryFactory) buildConfigurableProduct(repo inMemoryProductSearchInfrastructure.InMemoryProductRepository, row map[string]string, locale string, currency string) (*domain.ConfigurableProduct, error) {
 	err := f.validateRow(row, locale, currency, []string{"variantVariationAttributes", "CONFIGURABLE-products"})
 	if err != nil {
 		return nil, err
@@ -165,4 +176,18 @@ func (f *InMemoryProductRepositoryFactory) getMedia(row map[string]string, local
 	}
 
 	return medias
+}
+
+func (p *InMemoryProductRepositoryProvider) GetForCurrentLocale() (*inMemoryProductSearchInfrastructure.InMemoryProductRepository, error) {
+	locale := p.Locale
+	if v, ok := buildedRepositoryByLocale[locale]; ok {
+		return v, nil
+	}
+	p.Logger.Info("Build InMemoryProductRepository for locale " + locale + " .....")
+	rep, err := p.InMemoryProductRepositoryFactory.BuildFromProductCSV(p.ProductCSVPath, locale, p.Currency)
+	if err != nil {
+		return nil, err
+	}
+	buildedRepositoryByLocale[locale] = rep
+	return buildedRepositoryByLocale[locale], nil
 }
