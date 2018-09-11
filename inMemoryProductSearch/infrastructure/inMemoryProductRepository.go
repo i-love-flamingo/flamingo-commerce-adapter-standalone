@@ -1,6 +1,8 @@
 package infrastructure
 
 import (
+	"sort"
+
 	"flamingo.me/flamingo-commerce/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/search/domain"
 )
@@ -31,10 +33,81 @@ func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string
 }
 
 // Get returns a product struct
-func (r *InMemoryProductRepository) Find(filter ...searchDomain.Filter) ([]domain.BasicProduct, error) {
+func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]domain.BasicProduct, error) {
 	var results []domain.BasicProduct
+	//fmt.Printf("%#v", filters)
+
+	keyValueFilters := getKeyValueFilter(filters...)
+
+productLoop:
 	for _, p := range r.products {
-		results = append(results, p)
+		if len(keyValueFilters) == 0 {
+			results = append(results, p)
+			continue productLoop
+		}
+
+		for _, filter := range keyValueFilters {
+			filterKey, values := filter.Value()
+			for _, filterVal := range values {
+				if !p.BaseData().HasAttribute(filterKey) {
+					continue productLoop
+				}
+				if len(p.BaseData().Attributes[filterKey].Values()) > 0 {
+					// Multivalue Attribute
+					for _, attributeValue := range p.BaseData().Attributes[filterKey].Values() {
+						if attributeValue == filterVal {
+							results = append(results, p)
+							continue productLoop
+						}
+					}
+				} else if filterVal == p.BaseData().Attributes[filterKey].Value() {
+					// Single Value Attribute
+					results = append(results, p)
+					continue productLoop
+				}
+			}
+		}
 	}
+
+	// Sort the Results
+	for _, filter := range filters {
+		if sortFilter, ok := filter.(*searchDomain.SortFilter); ok {
+			k, v := sortFilter.Value()
+
+			sort.Slice(results, func(i, j int) bool {
+				var result bool
+
+				if v[0] == "A" {
+					result = results[i].BaseData().Attributes[k].Value() < results[j].BaseData().Attributes[k].Value()
+				}
+				if v[0] == "D" {
+					result = results[i].BaseData().Attributes[k].Value() > results[j].BaseData().Attributes[k].Value()
+				}
+
+				return result
+			})
+		}
+	}
+
+	// Limit the Results
+	for _, filter := range filters {
+		if pageSize, ok := filter.(*searchDomain.PaginationPageSize); ok {
+			size := pageSize.GetPageSize()
+			results = append([]domain.BasicProduct(nil), results[:size]...)
+		}
+	}
+
 	return results, nil
+
+}
+
+func getKeyValueFilter(filters ...searchDomain.Filter) []*searchDomain.KeyValueFilter {
+	var kvFilters []*searchDomain.KeyValueFilter
+	for _, filter := range filters {
+		// currently only keyvalue filters supported here
+		if kvFilter, ok := filter.(*searchDomain.KeyValueFilter); ok {
+			kvFilters = append(kvFilters, kvFilter)
+		}
+	}
+	return kvFilters
 }
