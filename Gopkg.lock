@@ -24,7 +24,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:aab6f4bfe13c868dc154d28b2e757178cfa51aadd79639a2bef80e6d3aab6723"
+  digest = "1:ca78e82ce3e5fe13584d81df07fcc10610f4481c8df18b89cd4e34c6ecd29d0b"
   name = "flamingo.me/flamingo-commerce"
   packages = [
     "category/domain",
@@ -32,7 +32,7 @@
     "search/domain",
   ]
   pruneopts = ""
-  revision = "6e01dc6a1c6d5ac49552ff3749de0f324709a632"
+  revision = "b47783ead9d0c88219b63dbd680299a4ccdf19fb"
 
 [[projects]]
   branch = "master"
