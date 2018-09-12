@@ -110,6 +110,16 @@ func (f *InMemoryProductRepositoryFactory) validateRow(row map[string]string, lo
 }
 
 func (f *InMemoryProductRepositoryFactory) getBasicProductData(row map[string]string, locale string) domain.BasicProductData {
+	attributes := make(map[string]domain.Attribute)
+
+	for key, data := range row {
+		attributes[key] = domain.Attribute{
+			Code: key,
+			Label: key,
+			RawValue: data,
+		}
+	}
+
 	return domain.BasicProductData{
 		MarketPlaceCode:  row["marketplaceCode"],
 		RetailerCode:     row["retailerCode"],
@@ -120,6 +130,7 @@ func (f *InMemoryProductRepositoryFactory) getBasicProductData(row map[string]st
 		RetailerName:     row["retailerCode"],
 		Media:            f.getMedia(row, locale),
 		Keywords:         strings.Split("metaKeywords-"+locale, ","),
+		Attributes:       attributes,
 	}
 }
 
