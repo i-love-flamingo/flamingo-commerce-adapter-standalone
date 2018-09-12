@@ -35,11 +35,10 @@ func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string
 // Get returns a product struct
 func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]domain.BasicProduct, error) {
 	var results []domain.BasicProduct
-	//fmt.Printf("%#v", filters)
 
 	keyValueFilters := getKeyValueFilter(filters...)
 
-productLoop:
+	productLoop:
 	for _, p := range r.products {
 		if len(keyValueFilters) == 0 {
 			results = append(results, p)
@@ -75,16 +74,11 @@ productLoop:
 			k, v := sortFilter.Value()
 
 			sort.Slice(results, func(i, j int) bool {
-				var result bool
-
 				if v[0] == "A" {
-					result = results[i].BaseData().Attributes[k].Value() < results[j].BaseData().Attributes[k].Value()
-				}
-				if v[0] == "D" {
-					result = results[i].BaseData().Attributes[k].Value() > results[j].BaseData().Attributes[k].Value()
+					return results[i].BaseData().Attributes[k].Value() < results[j].BaseData().Attributes[k].Value()
 				}
 
-				return result
+				return results[i].BaseData().Attributes[k].Value() > results[j].BaseData().Attributes[k].Value()
 			})
 		}
 	}
