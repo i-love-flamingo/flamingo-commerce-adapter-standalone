@@ -19,6 +19,7 @@ import (
 )
 
 type (
+	// ImageController serves images for the product csv
 	ImageController struct {
 		responder.ErrorAware    `inject:""`
 		Logger                  flamingo.Logger `inject:""`
@@ -91,5 +92,6 @@ func inSlice(search string, slice []string) bool {
 			return true
 		}
 	}
+
 	return false
 }

@@ -1,8 +1,8 @@
-package csvCommerce
+package csvcommerce
 
 import (
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure"
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productRepository"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productrepository"
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/interfaces/controller"
 	inMemoryProductSearchInfrastructure "flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
 	categorydomain "flamingo.me/flamingo-commerce/category/domain"
@@ -12,7 +12,7 @@ import (
 	"flamingo.me/flamingo/framework/router"
 )
 
-// ensure types for the Ports and Adapters
+// Ensure types for the Ports and Adapters
 var (
 	_ productdomain.ProductService   = nil
 	_ productdomain.SearchService    = nil
@@ -21,7 +21,6 @@ var (
 )
 
 type (
-
 	// ProductClientModule for product client stuff
 	ProductClientModule struct{}
 
@@ -37,7 +36,7 @@ func (module *ProductClientModule) Configure(injector *dingo.Injector) {
 	injector.Bind((*productdomain.ProductService)(nil)).To(infrastructure.ProductServiceAdapter{})
 
 	injector.Bind((*inMemoryProductSearchInfrastructure.InMemoryProductRepository)(nil)).ToProvider(
-		func(provider *productRepository.InMemoryProductRepositoryProvider) *inMemoryProductSearchInfrastructure.InMemoryProductRepository {
+		func(provider *productrepository.InMemoryProductRepositoryProvider) *inMemoryProductSearchInfrastructure.InMemoryProductRepository {
 			rep, err := provider.GetForCurrentLocale()
 			if err != nil {
 				panic("cannot get InMemoryProductRepository")
@@ -55,7 +54,6 @@ func (module *SearchClientModule) Configure(injector *dingo.Injector) {
 		injector.Bind((*searchdomain.SearchService)(nil)).To(search.ProductSearchServiceAdapter{})
 
 		injector.BindMap(search.Decoder(nil), "product").ToInstance(search.ProductDecoder)
-
 	*/
 }
 

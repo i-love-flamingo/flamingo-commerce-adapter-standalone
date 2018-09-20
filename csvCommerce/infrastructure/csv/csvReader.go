@@ -10,9 +10,11 @@ import (
 )
 
 type (
+	// ProductCsvRowDto is a simple Data Transfer Object to receive CSV Rows
 	ProductCsvRowDto map[string]string
 )
 
+// ReadProductCSV reads a CSV File and returns its Contents
 func ReadProductCSV(csvFile string) ([]ProductCsvRowDto, error) {
 	f, err := os.Open(csvFile)
 	if err != nil {
@@ -29,6 +31,7 @@ func ReadProductCSV(csvFile string) ([]ProductCsvRowDto, error) {
 	r.Comma = ';'
 	rowCount := 0
 	isFirstRow := true
+
 	for {
 		rowCount++
 		record, err := r.Read()
@@ -45,12 +48,15 @@ func ReadProductCSV(csvFile string) ([]ProductCsvRowDto, error) {
 		}
 
 		row := make(map[string]string)
+
 		for k, colName := range headerRow {
 			if len(record) > k {
 				row[colName] = record[k]
 			}
 		}
+
 		csvContents = append(csvContents, row)
 	}
+
 	return csvContents, nil
 }

@@ -1,4 +1,4 @@
-package productRepository
+package productrepository
 
 import (
 	"errors"
@@ -14,9 +14,12 @@ import (
 )
 
 type (
+	// InMemoryProductRepositoryFactory returns a Product Repository Type which is held in memory
 	InMemoryProductRepositoryFactory struct {
 		Logger flamingo.Logger `inject:""`
 	}
+
+	// InMemoryProductRepositoryProvider creates a Provider for Repository Handling of the In Memory Type
 	InMemoryProductRepositoryProvider struct {
 		InMemoryProductRepositoryFactory *InMemoryProductRepositoryFactory `inject:""`
 		Logger                           flamingo.Logger                   `inject:""`
@@ -29,11 +32,13 @@ type (
 //TODO - use map with lock (sync map) https://github.com/golang/go/blob/master/src/sync/map.go
 var buildedRepositoryByLocale = make(map[string]*inMemoryProductSearchInfrastructure.InMemoryProductRepository)
 
+// BuildFromProductCSV reads Products from a CSV File and returns a Product Repository of the In Memory Type
 func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, locale string, currency string) (*inMemoryProductSearchInfrastructure.InMemoryProductRepository, error) {
 	rows, err := csv.ReadProductCSV(csvFile)
 	if err != nil {
 		return nil, err
 	}
+
 	//todo use Dingo provider
 	newRepo := inMemoryProductSearchInfrastructure.InMemoryProductRepository{}
 
@@ -46,6 +51,7 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 			newRepo.Add(*product)
 		}
 	}
+
 	for rowK, row := range rows {
 		if row["productType"] == "configurable" {
 			product, err := f.buildConfigurableProduct(newRepo, row, locale, currency)
@@ -59,6 +65,27 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 	return &newRepo, nil
 }
 
+// GetForCurrentLocale returns a Product Repository of the In Memory Type prefiltered for a given locale
+func (p *InMemoryProductRepositoryProvider) GetForCurrentLocale() (*inMemoryProductSearchInfrastructure.InMemoryProductRepository, error) {
+	locale := p.Locale
+
+	if v, ok := buildedRepositoryByLocale[locale]; ok {
+		return v, nil
+	}
+
+	p.Logger.Info("Build InMemoryProductRepository for locale " + locale + " .....")
+
+	rep, err := p.InMemoryProductRepositoryFactory.BuildFromProductCSV(p.ProductCSVPath, locale, p.Currency)
+	if err != nil {
+		return nil, err
+	}
+
+	buildedRepositoryByLocale[locale] = rep
+
+	return buildedRepositoryByLocale[locale], nil
+}
+
+// buildConfigurableProduct creates Products of the Configurable Type from CSV Rows
 func (f *InMemoryProductRepositoryFactory) buildConfigurableProduct(repo inMemoryProductSearchInfrastructure.InMemoryProductRepository, row map[string]string, locale string, currency string) (*domain.ConfigurableProduct, error) {
 	err := f.validateRow(row, locale, currency, []string{"variantVariationAttributes", "CONFIGURABLE-products"})
 	if err != nil {
@@ -91,14 +118,17 @@ func (f *InMemoryProductRepositoryFactory) buildConfigurableProduct(repo inMemor
 	return &configurable, nil
 }
 
+// splitTrimmed splits strings by comma and returns a slice of pre-trimmed strings
 func splitTrimmed(value string) []string {
 	result := strings.Split(value, ",")
 	for k, v := range result {
 		result[k] = strings.TrimSpace(v)
 	}
+
 	return result
 }
 
+// validateRow ensures CSV Rows have the correct columns
 func (f *InMemoryProductRepositoryFactory) validateRow(row map[string]string, locale string, currency string, additionalRequiredCols []string) error {
 	additionalRequiredCols = append(additionalRequiredCols, []string{"marketplaceCode", "retailerCode", "title-" + locale, "metaKeywords-" + locale, "shortDescription-" + locale, "description-" + locale, "price-" + currency}...)
 	for _, requiredAttribute := range additionalRequiredCols {
@@ -106,9 +136,11 @@ func (f *InMemoryProductRepositoryFactory) validateRow(row map[string]string, lo
 			return fmt.Errorf("required attribute %q is missing", requiredAttribute)
 		}
 	}
+
 	return nil
 }
 
+// getBasicProductData reads a CSV row and returns Basic Product Data Structs
 func (f *InMemoryProductRepositoryFactory) getBasicProductData(row map[string]string, locale string) domain.BasicProductData {
 	attributes := make(map[string]domain.Attribute)
 
@@ -134,16 +166,20 @@ func (f *InMemoryProductRepositoryFactory) getBasicProductData(row map[string]st
 	}
 }
 
+// getIdentifier returns only the Product Identifier (aka marketPlaceCode) from a map of strings (previously CSV Row)
 func (f *InMemoryProductRepositoryFactory) getIdentifier(row map[string]string) string {
 	return row["marketplaceCode"]
 }
 
+// buildSimpleProduct builds a Product of the Simple Type from a map of strings (previously a CSV Row)
 func (f *InMemoryProductRepositoryFactory) buildSimpleProduct(row map[string]string, locale string, currency string) (*domain.SimpleProduct, error) {
 	err := f.validateRow(row, locale, currency, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	price, _ := strconv.ParseFloat(row["price-"+currency], 64)
+
 	simple := domain.SimpleProduct{
 		Identifier:       f.getIdentifier(row),
 		BasicProductData: f.getBasicProductData(row, locale),
@@ -154,12 +190,15 @@ func (f *InMemoryProductRepositoryFactory) buildSimpleProduct(row map[string]str
 			},
 		},
 	}
+
 	simple.Teaser = domain.TeaserData{
 		TeaserPrice: simple.Saleable.ActivePrice,
 	}
+
 	return &simple, nil
 }
 
+// getMedia gets the Product Images from a map of strings (previously a CSV Row)
 func (f *InMemoryProductRepositoryFactory) getMedia(row map[string]string, locale string) []domain.Media {
 	var medias []domain.Media
 	if v, ok := row["listImage"]; ok {
@@ -187,18 +226,4 @@ func (f *InMemoryProductRepositoryFactory) getMedia(row map[string]string, local
 	}
 
 	return medias
-}
-
-func (p *InMemoryProductRepositoryProvider) GetForCurrentLocale() (*inMemoryProductSearchInfrastructure.InMemoryProductRepository, error) {
-	locale := p.Locale
-	if v, ok := buildedRepositoryByLocale[locale]; ok {
-		return v, nil
-	}
-	p.Logger.Info("Build InMemoryProductRepository for locale " + locale + " .....")
-	rep, err := p.InMemoryProductRepositoryFactory.BuildFromProductCSV(p.ProductCSVPath, locale, p.Currency)
-	if err != nil {
-		return nil, err
-	}
-	buildedRepositoryByLocale[locale] = rep
-	return buildedRepositoryByLocale[locale], nil
 }

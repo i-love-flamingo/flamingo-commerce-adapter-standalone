@@ -8,7 +8,7 @@ import (
 )
 
 type (
-	// ProductService interface
+	// ProductServiceAdapter interface
 	ProductServiceAdapter struct {
 		InMemoryProductRepository *infrastructure.InMemoryProductRepository `inject:""`
 	}

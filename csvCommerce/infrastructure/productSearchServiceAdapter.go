@@ -9,6 +9,7 @@ import (
 )
 
 type (
+	// ProductSearchServiceAdapter implements methods to search in a product repository
 	ProductSearchServiceAdapter struct {
 		InMemoryProductRepository *infrastructure.InMemoryProductRepository `inject:""`
 	}
@@ -18,11 +19,13 @@ var (
 	_ productDomain.SearchService = &ProductSearchServiceAdapter{}
 )
 
+// Search returns a Search Result for the given context and supplied filters
 func (p *ProductSearchServiceAdapter) Search(ctx context.Context, filter ...searchDomain.Filter) (productDomain.SearchResult, error) {
 	products, err := p.InMemoryProductRepository.Find(filter...)
 	if err != nil {
 		return productDomain.SearchResult{}, err
 	}
+
 	return productDomain.SearchResult{
 		Hits: products,
 		Result: searchDomain.Result{
@@ -31,13 +34,9 @@ func (p *ProductSearchServiceAdapter) Search(ctx context.Context, filter ...sear
 			},
 		},
 	}, nil
-
 }
 
-/*
-	SearchBy returns Products prefiltered by the given attribute (also based on additional given Filters)
-	 e.g. SearchBy(ctx,"brandCode","apple")
-*/
+// SearchBy returns Products prefiltered by the given attribute (also based on additional given Filters) e.g. SearchBy(ctx,"brandCode","apple")
 func (p *ProductSearchServiceAdapter) SearchBy(ctx context.Context, attribute string, values []string, filter ...searchDomain.Filter) (productDomain.SearchResult, error) {
 	return p.Search(ctx, nil)
 }

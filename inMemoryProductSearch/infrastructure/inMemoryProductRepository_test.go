@@ -7,13 +7,13 @@ import (
 	"sort"
 
 	"github.com/stretchr/testify/assert"
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productRepository"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productrepository"
 	"flamingo.me/flamingo-commerce/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/search/domain"
 )
 
 func TestFactoryCanBuildSimpleTest(t *testing.T) {
-	factory := productRepository.InMemoryProductRepositoryFactory{}
+	factory := productrepository.InMemoryProductRepositoryFactory{}
 
 	currentDir, _ := os.Getwd()
 	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
@@ -27,7 +27,7 @@ func TestFactoryCanBuildSimpleTest(t *testing.T) {
 }
 
 func TestFactoryCanBuildConfigurableTest(t *testing.T) {
-	factory := productRepository.InMemoryProductRepositoryFactory{}
+	factory := productrepository.InMemoryProductRepositoryFactory{}
 
 	currentDir, _ := os.Getwd()
 	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
@@ -54,7 +54,7 @@ func TestPageSize(t *testing.T) {
 	pageSizeA := 3
 	pageSizeB := 6
 
-	factory := productRepository.InMemoryProductRepositoryFactory{}
+	factory := productrepository.InMemoryProductRepositoryFactory{}
 
 	currentDir, _ := os.Getwd()
 	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
@@ -72,7 +72,7 @@ func TestPageSize(t *testing.T) {
 }
 
 func TestSortDirection(t *testing.T) {
-	factory := productRepository.InMemoryProductRepositoryFactory{}
+	factory := productrepository.InMemoryProductRepositoryFactory{}
 
 	currentDir, _ := os.Getwd()
 	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
@@ -114,7 +114,7 @@ func TestFilterByAttribute(t *testing.T) {
 	attributeName := "20000733_lactoseFreeClaim"
 	attributeValue := "30002654_yes"
 
-	factory := productRepository.InMemoryProductRepositoryFactory{}
+	factory := productrepository.InMemoryProductRepositoryFactory{}
 
 	currentDir, _ := os.Getwd()
 	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")

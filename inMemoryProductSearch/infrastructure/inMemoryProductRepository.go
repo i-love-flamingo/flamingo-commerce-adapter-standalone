@@ -8,21 +8,23 @@ import (
 )
 
 type (
+	// InMemoryProductRepository serves as a Repository of Products held in memory
 	InMemoryProductRepository struct {
 		products map[string]domain.BasicProduct
 	}
 )
 
-// Get returns a product struct
+// Add returns a product struct
 func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
 	if r.products == nil {
 		r.products = make(map[string]domain.BasicProduct)
 	}
 	r.products[product.BaseData().MarketPlaceCode] = product
+
 	return nil
 }
 
-// Get returns a product struct
+// FindByMarketplaceCode returns a product struct for the given marketplaceCode
 func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string) (domain.BasicProduct, error) {
 	if v, ok := r.products[marketplaceCode]; ok {
 		return v, nil
@@ -32,7 +34,7 @@ func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string
 	}
 }
 
-// Get returns a product struct
+// Find returns a slice of product structs filtered from the product repository after applying the given filters
 func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]domain.BasicProduct, error) {
 	var results []domain.BasicProduct
 
@@ -92,7 +94,6 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]doma
 	}
 
 	return results, nil
-
 }
 
 func getKeyValueFilter(filters ...searchDomain.Filter) []*searchDomain.KeyValueFilter {
@@ -103,5 +104,6 @@ func getKeyValueFilter(filters ...searchDomain.Filter) []*searchDomain.KeyValueF
 			kvFilters = append(kvFilters, kvFilter)
 		}
 	}
+
 	return kvFilters
 }
