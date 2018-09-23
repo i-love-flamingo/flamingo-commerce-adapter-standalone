@@ -3,7 +3,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ecc3012247e95e3474261567ffc47c6f1b02dc6517c29cd87ef4147bfec0fb21"
+  digest = "1:a390a0ae058ddf06a6c336c9ca46b9688117651dae4ebe260ba83adb35882ef5"
   name = "flamingo.me/flamingo"
   packages = [
     "core/pugtemplate/pugjs",
@@ -20,11 +20,11 @@
     "framework/web/responder",
   ]
   pruneopts = ""
-  revision = "624e4e43bc1c34d78739c47623b69bdd9c21a91a"
+  revision = "f6cd2c7abffd099c8f61217234d145abff01740e"
 
 [[projects]]
   branch = "master"
-  digest = "1:ca78e82ce3e5fe13584d81df07fcc10610f4481c8df18b89cd4e34c6ecd29d0b"
+  digest = "1:dde0050dfda94a3e3c0e45d40f2544abd135841dfd41cc064665d6d0aafb7eff"
   name = "flamingo.me/flamingo-commerce"
   packages = [
     "category/domain",
@@ -32,7 +32,7 @@
     "search/domain",
   ]
   pruneopts = ""
-  revision = "b47783ead9d0c88219b63dbd680299a4ccdf19fb"
+  revision = "28f0608ec8543a057fc80651e1f0afef28e394b5"
 
 [[projects]]
   branch = "master"

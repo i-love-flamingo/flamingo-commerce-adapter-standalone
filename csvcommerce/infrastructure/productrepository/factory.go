@@ -7,7 +7,7 @@ import (
 
 	"strconv"
 
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/csv"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/csv"
 	inMemoryProductSearchInfrastructure "flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
 	"flamingo.me/flamingo-commerce/product/domain"
 	"flamingo.me/flamingo/framework/flamingo"
@@ -48,6 +48,7 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 			if err != nil {
 				f.Logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
 			}
+
 			newRepo.Add(*product)
 		}
 	}
@@ -58,6 +59,7 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 			if err != nil {
 				f.Logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
 			}
+
 			newRepo.Add(*product)
 		}
 	}

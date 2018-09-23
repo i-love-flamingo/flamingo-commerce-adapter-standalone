@@ -3,20 +3,20 @@ package infrastructure_test
 import (
 	"testing"
 	"fmt"
-	"os"
 	"sort"
 
 	"github.com/stretchr/testify/assert"
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productrepository"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productrepository"
 	"flamingo.me/flamingo-commerce/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/search/domain"
+	"runtime"
+	"path"
 )
 
 func TestFactoryCanBuildSimpleTest(t *testing.T) {
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	currentDir, _ := os.Getwd()
-	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	product, err := rep.FindByMarketplaceCode("1000000")
@@ -29,8 +29,7 @@ func TestFactoryCanBuildSimpleTest(t *testing.T) {
 func TestFactoryCanBuildConfigurableTest(t *testing.T) {
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	currentDir, _ := os.Getwd()
-	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	product, err := rep.FindByMarketplaceCode("CONF-1000000")
@@ -56,8 +55,7 @@ func TestPageSize(t *testing.T) {
 
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	currentDir, _ := os.Getwd()
-	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	pageSizeFilterA := searchDomain.NewPaginationPageSizeFilter(pageSizeA)
@@ -74,8 +72,7 @@ func TestPageSize(t *testing.T) {
 func TestSortDirection(t *testing.T) {
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	currentDir, _ := os.Getwd()
-	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	ascendingFilter := searchDomain.NewSortFilter("name", "A")
@@ -116,8 +113,7 @@ func TestFilterByAttribute(t *testing.T) {
 
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	currentDir, _ := os.Getwd()
-	rep, err := factory.BuildFromProductCSV(currentDir+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	attributeFilter := searchDomain.NewKeyValueFilter(attributeName, []string{attributeValue})
@@ -136,4 +132,14 @@ func reverseStringSlice(stringSlice []string) []string {
 	}
 
 	return stringSlice
+}
+
+func getAppDirectory() string {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	fmt.Printf("Filename : %q, Dir : %q\n", filename, path.Dir(filename))
+
+	return path.Dir(filename)
 }

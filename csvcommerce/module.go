@@ -1,9 +1,9 @@
 package csvcommerce
 
 import (
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure"
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/infrastructure/productrepository"
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvCommerce/interfaces/controller"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productrepository"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/interfaces/controller"
 	inMemoryProductSearchInfrastructure "flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
 	categorydomain "flamingo.me/flamingo-commerce/category/domain"
 	productdomain "flamingo.me/flamingo-commerce/product/domain"

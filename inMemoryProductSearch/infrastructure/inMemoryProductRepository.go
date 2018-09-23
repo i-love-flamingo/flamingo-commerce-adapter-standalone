@@ -10,28 +10,44 @@ import (
 type (
 	// InMemoryProductRepository serves as a Repository of Products held in memory
 	InMemoryProductRepository struct {
-		products map[string]domain.BasicProduct
+		products []domain.BasicProduct
+		index map[string]map[string][]*domain.BasicProduct
 	}
 )
 
-// Add returns a product struct
+// Add appends a product to the Product Repository
 func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
-	if r.products == nil {
-		r.products = make(map[string]domain.BasicProduct)
+	r.products = append(r.products, product)
+
+	if r.index == nil {
+		r.index = make(map[string]map[string][]*domain.BasicProduct)
 	}
-	r.products[product.BaseData().MarketPlaceCode] = product
+
+	for _, attribute := range product.BaseData().Attributes {
+		if _, ok := r.index[attribute.Code]; !ok {
+			r.index[attribute.Code] = make(map[string][]*domain.BasicProduct)
+		}
+
+		r.index[attribute.Code][attribute.Value()] = append(r.index[attribute.Code][attribute.Value()], &product)
+	}
 
 	return nil
 }
 
 // FindByMarketplaceCode returns a product struct for the given marketplaceCode
 func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string) (domain.BasicProduct, error) {
-	if v, ok := r.products[marketplaceCode]; ok {
-		return v, nil
+	results, err := r.Find(searchDomain.NewKeyValueFilter("marketplaceCode", []string{marketplaceCode}))
+	if err != nil {
+		return nil, err
 	}
-	return nil, domain.ProductNotFound{
-		MarketplaceCode: marketplaceCode,
+
+	if len(results) == 0 {
+		return nil, domain.ProductNotFound{
+			MarketplaceCode: marketplaceCode,
+		}
 	}
+
+	return results[0], nil
 }
 
 // Find returns a slice of product structs filtered from the product repository after applying the given filters
@@ -40,31 +56,19 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]doma
 
 	keyValueFilters := getKeyValueFilter(filters...)
 
-	productLoop:
-	for _, p := range r.products {
-		if len(keyValueFilters) == 0 {
+	if len(keyValueFilters) == 0 {
+		for _, p := range r.products {
 			results = append(results, p)
-			continue productLoop
 		}
+	}
 
-		for _, filter := range keyValueFilters {
-			filterKey, values := filter.Value()
-			for _, filterVal := range values {
-				if !p.BaseData().HasAttribute(filterKey) {
-					continue productLoop
-				}
-				if len(p.BaseData().Attributes[filterKey].Values()) > 0 {
-					// Multivalue Attribute
-					for _, attributeValue := range p.BaseData().Attributes[filterKey].Values() {
-						if attributeValue == filterVal {
-							results = append(results, p)
-							continue productLoop
-						}
-					}
-				} else if filterVal == p.BaseData().Attributes[filterKey].Value() {
-					// Single Value Attribute
-					results = append(results, p)
-					continue productLoop
+	for _, filter := range keyValueFilters {
+		filterKey, filterValues := filter.Value()
+		for _, filterValue := range filterValues {
+			lookup := r.index[filterKey][filterValue]
+			if len(lookup) > 0 {
+				for _, productItem := range lookup {
+					results = append(results, *productItem)
 				}
 			}
 		}
@@ -89,7 +93,13 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]doma
 	for _, filter := range filters {
 		if pageSize, ok := filter.(*searchDomain.PaginationPageSize); ok {
 			size := pageSize.GetPageSize()
-			results = append([]domain.BasicProduct(nil), results[:size]...)
+			if len(results) < size {
+				size = len(results)
+			}
+
+			if size > 0 {
+				results = results[:size]
+			}
 		}
 	}
 
