@@ -47,6 +47,7 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 			product, err := f.buildSimpleProduct(row, locale, currency)
 			if err != nil {
 				f.Logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
+				continue
 			}
 
 			newRepo.Add(*product)
@@ -58,6 +59,7 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 			product, err := f.buildConfigurableProduct(newRepo, row, locale, currency)
 			if err != nil {
 				f.Logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
+				continue
 			}
 
 			newRepo.Add(*product)
