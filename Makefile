@@ -1,24 +1,18 @@
-CONTEXT?=dev
-.PHONY: up localup update test
+.PHONY: local
+REPLACE?=-replace flamingo.me/flamingo/v3=../flamingo -replace flamingo.me/flamingo-commerce/v3=../flamingo-commerce -replace flamingo.me/form=../form
+DROPREPLACE?=-dropreplace flamingo.me/flamingo/v3 -dropreplace flamingo.me/flamingo-commerce/v3 -dropreplace flamingo.me/form
 
-up:
-	rm -rf vendor/
-	dep ensure -v -vendor-only
-
-update:
-	rm -rf vendor/
-	dep ensure -v -update flamingo.me/flamingo
-	dep ensure -v -update flamingo.me/flamingo-commerce
-
-localup: up local
-	
 local:
-	rm -rf vendor/flamingo.me/flamingo
-	ln -sf ../../../flamingo vendor/flamingo.me/flamingo
-	rm -rf vendor/flamingo.me/flamingo/vendor
-	rm -rf vendor/flamingo.me/flamingo-commerce
-	ln -sf ../../../flamingo vendor/flamingo.me/flamingo-commerce
-	rm -rf vendor/flamingo.me/flamingo-commerce/vendor
-	
+	git config filter.gomod-commerceadapter-standalone.smudge 'go mod edit -fmt -print $(REPLACE) /dev/stdin'
+	git config filter.gomod-commerceadapter-standalone.clean 'go mod edit -fmt -print $(DROPREPLACE) /dev/stdin'
+	git config filter.gomod-commerceadapter-standalone.required true
+	go mod edit -fmt $(REPLACE)
+
+unlocal:
+	git config filter.gomod-commerceadapter-standalone.smudge ''
+	git config filter.gomod-commerceadapter-standalone.clean ''
+	git config filter.gomod-commerceadapter-standalone.required false
+	go mod edit -fmt $(DROPREPLACE)
+
 test:
-	go test -v ./...
+	go test -race -v ./...

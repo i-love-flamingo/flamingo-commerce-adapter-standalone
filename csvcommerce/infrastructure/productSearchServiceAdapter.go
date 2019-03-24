@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
-	productDomain "flamingo.me/flamingo-commerce/product/domain"
-	searchDomain "flamingo.me/flamingo-commerce/search/domain"
+	productDomain "flamingo.me/flamingo-commerce/v3/product/domain"
+	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 )
 
 type (

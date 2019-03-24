@@ -1,22 +1,23 @@
 package infrastructure_test
 
 import (
-	"testing"
 	"fmt"
 	"sort"
+	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productrepository"
-	"flamingo.me/flamingo-commerce/product/domain"
-	searchDomain "flamingo.me/flamingo-commerce/search/domain"
-	"runtime"
 	"path"
+	"runtime"
+
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productrepository"
+	"flamingo.me/flamingo-commerce/v3/product/domain"
+	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFactoryCanBuildSimpleTest(t *testing.T) {
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	product, err := rep.FindByMarketplaceCode("1000000")
@@ -29,7 +30,7 @@ func TestFactoryCanBuildSimpleTest(t *testing.T) {
 func TestFactoryCanBuildConfigurableTest(t *testing.T) {
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	product, err := rep.FindByMarketplaceCode("CONF-1000000")
@@ -55,7 +56,7 @@ func TestPageSize(t *testing.T) {
 
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	pageSizeFilterA := searchDomain.NewPaginationPageSizeFilter(pageSizeA)
@@ -66,13 +67,14 @@ func TestPageSize(t *testing.T) {
 	pageSizeFilterB := searchDomain.NewPaginationPageSizeFilter(pageSizeB)
 	productHits, err = rep.Find(pageSizeFilterB)
 	assert.NoError(t, err, fmt.Sprintf("Finding Products resulted in an error %s", err))
+
 	assert.Equal(t, pageSizeB, len(productHits), fmt.Sprintf("Expected to get %d results but got %d", pageSizeB, len(productHits)))
 }
 
 func TestSortDirection(t *testing.T) {
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	ascendingFilter := searchDomain.NewSortFilter("name", "A")
@@ -93,6 +95,8 @@ func TestSortDirection(t *testing.T) {
 	descendingFilter := searchDomain.NewSortFilter("name", "D")
 	productHits, err = rep.Find(descendingFilter)
 	assert.NotNil(t, productHits)
+	assert.True(t, len(productHits) > 0, "expected at least a hit")
+
 	assert.NoError(t, err, fmt.Sprintf("Finding Products resulted in an error %s", err))
 
 	var resultsDesc []string
@@ -104,6 +108,8 @@ func TestSortDirection(t *testing.T) {
 	}
 
 	assert.NotNil(t, productHits)
+	assert.True(t, len(productHits) > 0, "expected at least a hit")
+
 	assert.Equal(t, reverseStringSlice(resultsAsc), resultsDesc, "Value order was not reversed")
 }
 
@@ -113,13 +119,13 @@ func TestFilterByAttribute(t *testing.T) {
 
 	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory() + "/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
+	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
 	assert.NoError(t, err)
 
 	attributeFilter := searchDomain.NewKeyValueFilter(attributeName, []string{attributeValue})
 	productHits, err := rep.Find(attributeFilter)
 	assert.NotNil(t, productHits)
-
+	assert.True(t, len(productHits) > 0, "expected at least a hit")
 	for _, hit := range productHits {
 		assert.Equal(t, attributeValue, hit.BaseData().Attributes[attributeName].Value())
 	}

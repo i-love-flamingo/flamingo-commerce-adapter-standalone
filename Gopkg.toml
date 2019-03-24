@@ -1,7 +1,0 @@
-[[override]]
-  name = "flamingo.me/flamingo"
-  branch = "master"
-
-[[override]]
-  name = "flamingo.me/flamingo-commerce"
-  branch = "master"

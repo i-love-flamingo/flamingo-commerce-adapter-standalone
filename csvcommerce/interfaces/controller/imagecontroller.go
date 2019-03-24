@@ -5,23 +5,21 @@ import (
 	"context"
 	"image"
 	"image/jpeg"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
 
 	"path/filepath"
 
-	"flamingo.me/flamingo/framework/flamingo"
-	"flamingo.me/flamingo/framework/web"
-	"flamingo.me/flamingo/framework/web/responder"
+	"flamingo.me/flamingo/v3/framework/flamingo"
+	"flamingo.me/flamingo/v3/framework/web"
 	"github.com/disintegration/imaging"
 )
 
 type (
 	// ImageController serves images for the product csv
 	ImageController struct {
-		responder.ErrorAware    `inject:""`
+		Responder               *web.Responder  `inject:""`
 		Logger                  flamingo.Logger `inject:""`
 		ProductCsvPath          string          `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.productCsvPath"`
 		AllowedResizeParamaters string          `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.allowedImageResizeParamaters"`
@@ -32,7 +30,7 @@ type (
 var renderChan = make(chan struct{}, 5)
 
 // Get Response for Images
-func (vc *ImageController) Get(c context.Context, r *web.Request) web.Response {
+func (vc *ImageController) Get(c context.Context, r *web.Request) web.Result {
 	//block if buffered channel size is reached
 	renderChan <- struct{}{}
 	defer func() {
@@ -40,8 +38,8 @@ func (vc *ImageController) Get(c context.Context, r *web.Request) web.Response {
 		<-renderChan
 	}()
 
-	filename := r.MustParam1("filename")
-	size := r.MustParam1("size")
+	filename := r.Params["filename"]
+	size := r.Params["size"]
 	if !inSlice(size, strings.Split(vc.AllowedResizeParamaters, ",")) {
 		vc.Logger.Warn("Imagesize " + size + " not allowed!")
 		size = "200x"
@@ -59,14 +57,14 @@ func (vc *ImageController) Get(c context.Context, r *web.Request) web.Response {
 	reader, err := os.Open(filepath.Join(filepath.Dir(vc.ProductCsvPath), filename))
 	if err != nil {
 		vc.Logger.Error(err)
-		return vc.ErrorWithCode(c, err, 404)
+		return vc.Responder.NotFound(err)
 	}
 
 	defer reader.Close()
 	im, _, err := image.Decode(reader)
 	if err != nil {
 		vc.Logger.Error(err)
-		return vc.ErrorWithCode(c, err, 500)
+		return vc.Responder.ServerError(err)
 	}
 
 	im = imaging.Resize(im, width, height, imaging.Lanczos)
@@ -75,15 +73,9 @@ func (vc *ImageController) Get(c context.Context, r *web.Request) web.Response {
 	err = jpeg.Encode(buf, im, &jpeg.Options{Quality: 90})
 	if err != nil {
 		vc.Logger.Error(err)
-		return vc.ErrorWithCode(c, err, 500)
+		return vc.Responder.ServerError(err)
 	}
-	return &web.ContentResponse{
-		ContentType: "image/png",
-		BasicResponse: web.BasicResponse{
-			Status: http.StatusOK,
-		},
-		Body: buf,
-	}
+	return vc.Responder.Download(buf, "image/png", filename, false)
 }
 
 func inSlice(search string, slice []string) bool {

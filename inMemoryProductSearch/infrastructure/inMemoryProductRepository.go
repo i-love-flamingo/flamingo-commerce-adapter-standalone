@@ -1,34 +1,68 @@
 package infrastructure
 
 import (
+	"log"
 	"sort"
+	"sync"
 
-	"flamingo.me/flamingo-commerce/product/domain"
-	searchDomain "flamingo.me/flamingo-commerce/search/domain"
+	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
+
+	"flamingo.me/flamingo-commerce/v3/product/domain"
+	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 )
 
 type (
 	// InMemoryProductRepository serves as a Repository of Products held in memory
 	InMemoryProductRepository struct {
-		products []domain.BasicProduct
-		index map[string]map[string][]*domain.BasicProduct
+		//marketplaceCodeIndex - index to get products from marketplaceCode
+		marketplaceCodeIndex map[string]domain.BasicProduct
+
+		//attributeReverseIndex - index to get products from attribute
+		attributeReverseIndex map[string]map[string][]string
+
+		//categoriesReverseIndex - index to get products by categoryCode
+		categoriesReverseIndex map[string][]string
+		addReadMutex           sync.RWMutex
+	}
+
+	marketPlaceCodeSet struct {
+		currentSet    []string
+		initialFilled bool
 	}
 )
 
 // Add appends a product to the Product Repository
 func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
-	r.products = append(r.products, product)
+	r.addReadMutex.Lock()
+	defer r.addReadMutex.Unlock()
 
-	if r.index == nil {
-		r.index = make(map[string]map[string][]*domain.BasicProduct)
+	marketPlaceCode := product.BaseData().MarketPlaceCode
+	//Set reverseindex for marketplaceCode (the primary indendifier)
+	if r.marketplaceCodeIndex == nil {
+		r.marketplaceCodeIndex = make(map[string]domain.BasicProduct)
+	}
+	if r.marketplaceCodeIndex[marketPlaceCode] != nil {
+		log.Println("Duplicate for marketplace code " + marketPlaceCode)
+	}
+	r.marketplaceCodeIndex[product.BaseData().MarketPlaceCode] = product
+
+	//Now add product to category indexes:
+	if r.categoriesReverseIndex == nil {
+		r.categoriesReverseIndex = make(map[string][]string)
+	}
+	for _, categoryCode := range product.BaseData().CategoryCodes {
+		r.categoriesReverseIndex[categoryCode] = append(r.categoriesReverseIndex[categoryCode], marketPlaceCode)
 	}
 
+	//Now fill the reverse index for all products attributes:
+	if r.attributeReverseIndex == nil {
+		r.attributeReverseIndex = make(map[string]map[string][]string)
+	}
 	for _, attribute := range product.BaseData().Attributes {
-		if _, ok := r.index[attribute.Code]; !ok {
-			r.index[attribute.Code] = make(map[string][]*domain.BasicProduct)
+		if _, ok := r.attributeReverseIndex[attribute.Code]; !ok {
+			r.attributeReverseIndex[attribute.Code] = make(map[string][]string)
 		}
-
-		r.index[attribute.Code][attribute.Value()] = append(r.index[attribute.Code][attribute.Value()], &product)
+		r.attributeReverseIndex[attribute.Code][attribute.Value()] = append(r.attributeReverseIndex[attribute.Code][attribute.Value()], marketPlaceCode)
 	}
 
 	return nil
@@ -36,42 +70,53 @@ func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
 
 // FindByMarketplaceCode returns a product struct for the given marketplaceCode
 func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string) (domain.BasicProduct, error) {
-	results, err := r.Find(searchDomain.NewKeyValueFilter("marketplaceCode", []string{marketplaceCode}))
-	if err != nil {
-		return nil, err
+	r.addReadMutex.RLock()
+	defer r.addReadMutex.RUnlock()
+
+	if product, ok := r.marketplaceCodeIndex[marketplaceCode]; ok {
+		return product, nil
 	}
 
-	if len(results) == 0 {
-		return nil, domain.ProductNotFound{
-			MarketplaceCode: marketplaceCode,
-		}
+	return nil, domain.ProductNotFound{
+		MarketplaceCode: marketplaceCode,
 	}
 
-	return results[0], nil
 }
 
 // Find returns a slice of product structs filtered from the product repository after applying the given filters
 func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]domain.BasicProduct, error) {
-	var results []domain.BasicProduct
+	r.addReadMutex.RLock()
+	defer r.addReadMutex.RUnlock()
 
-	keyValueFilters := getKeyValueFilter(filters...)
+	var productResults []domain.BasicProduct
 
-	if len(keyValueFilters) == 0 {
-		for _, p := range r.products {
-			results = append(results, p)
-		}
-	}
+	var matchingMarketplaceCodes marketPlaceCodeSet
 
-	for _, filter := range keyValueFilters {
+	for _, filter := range filters {
 		filterKey, filterValues := filter.Value()
-		for _, filterValue := range filterValues {
-			lookup := r.index[filterKey][filterValue]
-			if len(lookup) > 0 {
-				for _, productItem := range lookup {
-					results = append(results, *productItem)
-				}
+		switch filter.(type) {
+		case *searchDomain.KeyValueFilter:
+			for _, filterValue := range filterValues {
+				matchingCodes := r.attributeReverseIndex[filterKey][filterValue]
+				matchingMarketplaceCodes.intersection(matchingCodes)
+			}
+		case categoryDomain.CategoryFacet:
+			for _, filterValue := range filterValues {
+				matchingCodes := r.categoriesReverseIndex[filterValue]
+				matchingMarketplaceCodes.intersection(matchingCodes)
 			}
 		}
+
+	}
+
+	if !matchingMarketplaceCodes.initialFilled {
+		//get all products if not filtered yet
+		for _, p := range r.marketplaceCodeIndex {
+			productResults = append(productResults, p)
+		}
+	} else {
+		//otherwise get only the remaining marketplacecodes
+		productResults = r.getMatchingProducts(matchingMarketplaceCodes.currentSet)
 	}
 
 	// Sort the Results
@@ -79,12 +124,12 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]doma
 		if sortFilter, ok := filter.(*searchDomain.SortFilter); ok {
 			k, v := sortFilter.Value()
 
-			sort.Slice(results, func(i, j int) bool {
+			sort.Slice(productResults, func(i, j int) bool {
 				if v[0] == "A" {
-					return results[i].BaseData().Attributes[k].Value() < results[j].BaseData().Attributes[k].Value()
+					return productResults[i].BaseData().Attributes[k].Value() < productResults[j].BaseData().Attributes[k].Value()
 				}
 
-				return results[i].BaseData().Attributes[k].Value() > results[j].BaseData().Attributes[k].Value()
+				return productResults[i].BaseData().Attributes[k].Value() > productResults[j].BaseData().Attributes[k].Value()
 			})
 		}
 	}
@@ -93,27 +138,44 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]doma
 	for _, filter := range filters {
 		if pageSize, ok := filter.(*searchDomain.PaginationPageSize); ok {
 			size := pageSize.GetPageSize()
-			if len(results) < size {
-				size = len(results)
+			if len(productResults) < size {
+				size = len(productResults)
 			}
 
 			if size > 0 {
-				results = results[:size]
+				productResults = productResults[:size]
 			}
 		}
 	}
 
-	return results, nil
+	return productResults, nil
 }
 
-func getKeyValueFilter(filters ...searchDomain.Filter) []*searchDomain.KeyValueFilter {
-	var kvFilters []*searchDomain.KeyValueFilter
-	for _, filter := range filters {
-		// currently only keyvalue filters supported here
-		if kvFilter, ok := filter.(*searchDomain.KeyValueFilter); ok {
-			kvFilters = append(kvFilters, kvFilter)
+func (r *InMemoryProductRepository) getMatchingProducts(codes []string) []domain.BasicProduct {
+	var matches []domain.BasicProduct
+	for code, product := range r.marketplaceCodeIndex {
+		for _, codeToFind := range codes {
+			if code == codeToFind {
+				matches = append(matches, product)
+			}
 		}
 	}
+	return matches
+}
 
-	return kvFilters
+func (s *marketPlaceCodeSet) intersection(set2 []string) {
+	if !s.initialFilled {
+		s.currentSet = set2
+		s.initialFilled = true
+		return
+	}
+	var result []string
+	for _, v1 := range s.currentSet {
+		for _, v2 := range set2 {
+			if v1 == v2 {
+				result = append(result, v2)
+			}
+		}
+	}
+	s.currentSet = result
 }

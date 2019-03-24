@@ -5,32 +5,27 @@ import (
 	"fmt"
 	"strings"
 
+	priceDomain "flamingo.me/flamingo-commerce/v3/price/domain"
+
 	"strconv"
 
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/csv"
 	inMemoryProductSearchInfrastructure "flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
-	"flamingo.me/flamingo-commerce/product/domain"
-	"flamingo.me/flamingo/framework/flamingo"
+	"flamingo.me/flamingo-commerce/v3/product/domain"
+	"flamingo.me/flamingo/v3/framework/flamingo"
 )
 
 type (
 	// InMemoryProductRepositoryFactory returns a Product Repository Type which is held in memory
 	InMemoryProductRepositoryFactory struct {
-		Logger flamingo.Logger `inject:""`
-	}
-
-	// InMemoryProductRepositoryProvider creates a Provider for Repository Handling of the In Memory Type
-	InMemoryProductRepositoryProvider struct {
-		InMemoryProductRepositoryFactory *InMemoryProductRepositoryFactory `inject:""`
-		Logger                           flamingo.Logger                   `inject:""`
-		Locale                           string                            `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.locale"`
-		Currency                         string                            `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.currency"`
-		ProductCSVPath                   string                            `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.productCsvPath"`
+		logger flamingo.Logger
 	}
 )
 
-//TODO - use map with lock (sync map) https://github.com/golang/go/blob/master/src/sync/map.go
-var buildedRepositoryByLocale = make(map[string]*inMemoryProductSearchInfrastructure.InMemoryProductRepository)
+// Inject method to inject dependencies
+func (f *InMemoryProductRepositoryFactory) Inject(logger flamingo.Logger) {
+	f.logger = logger
+}
 
 // BuildFromProductCSV reads Products from a CSV File and returns a Product Repository of the In Memory Type
 func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, locale string, currency string) (*inMemoryProductSearchInfrastructure.InMemoryProductRepository, error) {
@@ -39,14 +34,13 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 		return nil, err
 	}
 
-	//todo use Dingo provider
 	newRepo := inMemoryProductSearchInfrastructure.InMemoryProductRepository{}
 
 	for rowK, row := range rows {
 		if row["productType"] == "simple" {
 			product, err := f.buildSimpleProduct(row, locale, currency)
 			if err != nil {
-				f.Logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
+				f.logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
 				continue
 			}
 
@@ -58,7 +52,7 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 		if row["productType"] == "configurable" {
 			product, err := f.buildConfigurableProduct(newRepo, row, locale, currency)
 			if err != nil {
-				f.Logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
+				f.logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
 				continue
 			}
 
@@ -67,26 +61,6 @@ func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, l
 	}
 
 	return &newRepo, nil
-}
-
-// GetForCurrentLocale returns a Product Repository of the In Memory Type prefiltered for a given locale
-func (p *InMemoryProductRepositoryProvider) GetForCurrentLocale() (*inMemoryProductSearchInfrastructure.InMemoryProductRepository, error) {
-	locale := p.Locale
-
-	if v, ok := buildedRepositoryByLocale[locale]; ok {
-		return v, nil
-	}
-
-	p.Logger.Info("Build InMemoryProductRepository for locale " + locale + " .....")
-
-	rep, err := p.InMemoryProductRepositoryFactory.BuildFromProductCSV(p.ProductCSVPath, locale, p.Currency)
-	if err != nil {
-		return nil, err
-	}
-
-	buildedRepositoryByLocale[locale] = rep
-
-	return buildedRepositoryByLocale[locale], nil
 }
 
 // buildConfigurableProduct creates Products of the Configurable Type from CSV Rows
@@ -150,8 +124,8 @@ func (f *InMemoryProductRepositoryFactory) getBasicProductData(row map[string]st
 
 	for key, data := range row {
 		attributes[key] = domain.Attribute{
-			Code: key,
-			Label: key,
+			Code:     key,
+			Label:    key,
 			RawValue: data,
 		}
 	}
@@ -189,8 +163,7 @@ func (f *InMemoryProductRepositoryFactory) buildSimpleProduct(row map[string]str
 		BasicProductData: f.getBasicProductData(row, locale),
 		Saleable: domain.Saleable{
 			ActivePrice: domain.PriceInfo{
-				Default:  price,
-				Currency: currency,
+				Default: priceDomain.NewFromFloat(price, currency),
 			},
 		},
 	}

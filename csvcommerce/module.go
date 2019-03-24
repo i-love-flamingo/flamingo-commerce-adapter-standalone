@@ -1,15 +1,15 @@
 package csvcommerce
 
 import (
+	"flamingo.me/dingo"
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure"
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productrepository"
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/interfaces/controller"
 	inMemoryProductSearchInfrastructure "flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
-	categorydomain "flamingo.me/flamingo-commerce/category/domain"
-	productdomain "flamingo.me/flamingo-commerce/product/domain"
-	searchdomain "flamingo.me/flamingo-commerce/search/domain"
-	"flamingo.me/flamingo/framework/dingo"
-	"flamingo.me/flamingo/framework/router"
+	categorydomain "flamingo.me/flamingo-commerce/v3/category/domain"
+	productdomain "flamingo.me/flamingo-commerce/v3/product/domain"
+	searchdomain "flamingo.me/flamingo-commerce/v3/search/domain"
+	"flamingo.me/flamingo/v3/framework/web"
 )
 
 // Ensure types for the Ports and Adapters
@@ -36,7 +36,7 @@ func (module *ProductClientModule) Configure(injector *dingo.Injector) {
 	injector.Bind((*productdomain.ProductService)(nil)).To(infrastructure.ProductServiceAdapter{})
 
 	injector.Bind((*inMemoryProductSearchInfrastructure.InMemoryProductRepository)(nil)).ToProvider(
-		func(provider *productrepository.InMemoryProductRepositoryProvider) *inMemoryProductSearchInfrastructure.InMemoryProductRepository {
+		func(provider *productrepository.InMemoryProductRepositoryBuilder) *inMemoryProductSearchInfrastructure.InMemoryProductRepository {
 			rep, err := provider.GetForCurrentLocale()
 			if err != nil {
 				panic("cannot get InMemoryProductRepository")
@@ -44,7 +44,7 @@ func (module *ProductClientModule) Configure(injector *dingo.Injector) {
 			return rep
 		}).In(dingo.ChildSingleton)
 
-	router.Bind(injector, new(routes))
+	web.BindRoutes(injector, new(routes))
 }
 
 // Configure DI
@@ -70,7 +70,7 @@ func (r *routes) Inject(controller *controller.ImageController) {
 	r.controller = controller
 }
 
-func (r *routes) Routes(registry *router.Registry) {
+func (r *routes) Routes(registry *web.RouterRegistry) {
 	registry.HandleGet("csvcommerce.image.get", r.controller.Get)
 	registry.Route("/image/:size/:filename", `csvcommerce.image.get(size,filename)`)
 }
