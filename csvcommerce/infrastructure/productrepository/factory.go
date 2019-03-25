@@ -130,10 +130,17 @@ func (f *InMemoryProductRepositoryFactory) getBasicProductData(row map[string]st
 		}
 	}
 
-	return domain.BasicProductData{
+	var categories []domain.CategoryTeaser
+	for _, categoryCode := range strings.Split(row["categories"], ",") {
+		categories = append(categories, domain.CategoryTeaser{
+			Code: categoryCode,
+		})
+	}
+
+	basicProductData := domain.BasicProductData{
 		MarketPlaceCode:  row["marketplaceCode"],
 		RetailerCode:     row["retailerCode"],
-		CategoryCodes:    strings.Split(row["categories"], ","),
+		Categories:       categories,
 		Title:            row["title-"+locale],
 		ShortDescription: row["shortDescription-"+locale],
 		Description:      row["description-"+locale],
@@ -142,6 +149,10 @@ func (f *InMemoryProductRepositoryFactory) getBasicProductData(row map[string]st
 		Keywords:         strings.Split("metaKeywords-"+locale, ","),
 		Attributes:       attributes,
 	}
+	if len(categories) > 0 {
+		basicProductData.MainCategory = categories[0]
+	}
+	return basicProductData
 }
 
 // getIdentifier returns only the Product Identifier (aka marketPlaceCode) from a map of strings (previously CSV Row)

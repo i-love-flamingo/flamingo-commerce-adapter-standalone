@@ -50,8 +50,9 @@ func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
 	if r.categoriesReverseIndex == nil {
 		r.categoriesReverseIndex = make(map[string][]string)
 	}
-	for _, categoryCode := range product.BaseData().CategoryCodes {
-		r.categoriesReverseIndex[categoryCode] = append(r.categoriesReverseIndex[categoryCode], marketPlaceCode)
+	for _, categoryTeaser := range product.BaseData().Categories {
+		r.categoriesReverseIndex[categoryTeaser.Code] = append(r.categoriesReverseIndex[categoryTeaser.Code], marketPlaceCode)
+
 	}
 
 	//Now fill the reverse index for all products attributes:
