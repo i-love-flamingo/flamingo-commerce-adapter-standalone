@@ -174,7 +174,7 @@ func (f *InMemoryProductRepositoryFactory) buildSimpleProduct(row map[string]str
 		BasicProductData: f.getBasicProductData(row, locale),
 		Saleable: domain.Saleable{
 			ActivePrice: domain.PriceInfo{
-				Default: priceDomain.NewFromFloat(price, currency),
+				Default: priceDomain.NewFromFloat(price, currency).GetPayable(),
 			},
 		},
 	}

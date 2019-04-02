@@ -21,16 +21,17 @@ var (
 
 // Search returns a Search Result for the given context and supplied filters
 func (p *ProductSearchServiceAdapter) Search(ctx context.Context, filter ...searchDomain.Filter) (productDomain.SearchResult, error) {
-	products, err := p.InMemoryProductRepository.Find(filter...)
+	productResult, err := p.InMemoryProductRepository.Find(filter...)
 	if err != nil {
 		return productDomain.SearchResult{}, err
 	}
 
 	return productDomain.SearchResult{
-		Hits: products,
+		Hits: productResult.Hits,
 		Result: searchDomain.Result{
 			SearchMeta: searchDomain.SearchMeta{
-				NumResults: len(products),
+				NumResults: productResult.TotalHits,
+				NumPages:   productResult.TotalPages,
 			},
 		},
 	}, nil

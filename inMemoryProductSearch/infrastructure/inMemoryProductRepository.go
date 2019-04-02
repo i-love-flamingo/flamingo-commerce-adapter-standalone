@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"log"
+	"math"
 	"sort"
 	"sync"
 
@@ -23,6 +24,13 @@ type (
 		//categoriesReverseIndex - index to get products by categoryCode
 		categoriesReverseIndex map[string][]string
 		addReadMutex           sync.RWMutex
+	}
+
+	Result struct {
+		TotalHits  int
+		PageSize   int
+		TotalPages int
+		Hits       []domain.BasicProduct
 	}
 
 	marketPlaceCodeSet struct {
@@ -85,7 +93,7 @@ func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string
 }
 
 // Find returns a slice of product structs filtered from the product repository after applying the given filters
-func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]domain.BasicProduct, error) {
+func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*Result, error) {
 	r.addReadMutex.RLock()
 	defer r.addReadMutex.RUnlock()
 
@@ -135,10 +143,15 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]doma
 		}
 	}
 
+	totalHits := len(productResults)
+	pageSize := int(0)
+	pageAmount := int(0)
+
 	// Limit the Results
 	for _, filter := range filters {
-		if pageSize, ok := filter.(*searchDomain.PaginationPageSize); ok {
-			size := pageSize.GetPageSize()
+		if pageSizeFilter, ok := filter.(*searchDomain.PaginationPageSize); ok {
+			size := pageSizeFilter.GetPageSize()
+			pageSize = size
 			if len(productResults) < size {
 				size = len(productResults)
 			}
@@ -148,8 +161,16 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) ([]doma
 			}
 		}
 	}
+	if pageSize > 0 {
+		pageAmount = int(math.Ceil(float64(totalHits) / float64(pageSize)))
+	}
 
-	return productResults, nil
+	return &Result{
+		Hits:       productResults,
+		TotalHits:  totalHits,
+		PageSize:   pageSize,
+		TotalPages: pageAmount,
+	}, nil
 }
 
 func (r *InMemoryProductRepository) getMatchingProducts(codes []string) []domain.BasicProduct {
