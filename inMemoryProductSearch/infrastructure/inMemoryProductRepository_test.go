@@ -62,13 +62,13 @@ func TestPageSize(t *testing.T) {
 	pageSizeFilterA := searchDomain.NewPaginationPageSizeFilter(pageSizeA)
 	productHits, err := rep.Find(pageSizeFilterA)
 	assert.NoError(t, err, fmt.Sprintf("Finding Products resulted in an error %s", err))
-	assert.Equal(t, pageSizeA, len(productHits), fmt.Sprintf("Expected to get %d results but got %d", pageSizeA, len(productHits)))
+	assert.Equal(t, pageSizeA, len(productHits.Hits), fmt.Sprintf("Expected to get %d results but got %d", pageSizeA, len(productHits.Hits)))
 
 	pageSizeFilterB := searchDomain.NewPaginationPageSizeFilter(pageSizeB)
 	productHits, err = rep.Find(pageSizeFilterB)
 	assert.NoError(t, err, fmt.Sprintf("Finding Products resulted in an error %s", err))
 
-	assert.Equal(t, pageSizeB, len(productHits), fmt.Sprintf("Expected to get %d results but got %d", pageSizeB, len(productHits)))
+	assert.Equal(t, pageSizeB, len(productHits.Hits), fmt.Sprintf("Expected to get %d results but got %d", pageSizeB, len(productHits.Hits)))
 }
 
 func TestSortDirection(t *testing.T) {
@@ -84,7 +84,7 @@ func TestSortDirection(t *testing.T) {
 
 	var resultsAsc []string
 
-	for _, hit := range productHits {
+	for _, hit := range productHits.Hits {
 		if hit.BaseData().HasAttribute("name") {
 			resultsAsc = append(resultsAsc, string(hit.BaseData().Attributes["name"].Value()))
 		}
@@ -95,20 +95,20 @@ func TestSortDirection(t *testing.T) {
 	descendingFilter := searchDomain.NewSortFilter("name", "D")
 	productHits, err = rep.Find(descendingFilter)
 	assert.NotNil(t, productHits)
-	assert.True(t, len(productHits) > 0, "expected at least a hit")
+	assert.True(t, len(productHits.Hits) > 0, "expected at least a hit")
 
 	assert.NoError(t, err, fmt.Sprintf("Finding Products resulted in an error %s", err))
 
 	var resultsDesc []string
 
-	for _, hit := range productHits {
+	for _, hit := range productHits.Hits {
 		if hit.BaseData().HasAttribute("name") {
 			resultsDesc = append(resultsDesc, string(hit.BaseData().Attributes["name"].Value()))
 		}
 	}
 
 	assert.NotNil(t, productHits)
-	assert.True(t, len(productHits) > 0, "expected at least a hit")
+	assert.True(t, len(productHits.Hits) > 0, "expected at least a hit")
 
 	assert.Equal(t, reverseStringSlice(resultsAsc), resultsDesc, "Value order was not reversed")
 }
@@ -125,8 +125,8 @@ func TestFilterByAttribute(t *testing.T) {
 	attributeFilter := searchDomain.NewKeyValueFilter(attributeName, []string{attributeValue})
 	productHits, err := rep.Find(attributeFilter)
 	assert.NotNil(t, productHits)
-	assert.True(t, len(productHits) > 0, "expected at least a hit")
-	for _, hit := range productHits {
+	assert.True(t, len(productHits.Hits) > 0, "expected at least a hit")
+	for _, hit := range productHits.Hits {
 		assert.Equal(t, attributeValue, hit.BaseData().Attributes[attributeName].Value())
 	}
 }
