@@ -28,7 +28,7 @@ func ReadProductCSV(csvFile string) ([]ProductCsvRowDto, error) {
 	// Create a new reader.
 	r := csv.NewReader(bufio.NewReader(f))
 	r.LazyQuotes = true
-	r.Comma = ';'
+	r.Comma = ','
 	rowCount := 0
 	isFirstRow := true
 
@@ -39,6 +39,10 @@ func ReadProductCSV(csvFile string) ([]ProductCsvRowDto, error) {
 		// Stop at EOF.
 		if err == io.EOF {
 			break
+		}
+		if err != nil {
+			log.Println(err)
+			continue
 		}
 
 		if isFirstRow {

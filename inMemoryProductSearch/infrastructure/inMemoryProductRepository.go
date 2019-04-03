@@ -94,6 +94,7 @@ func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string
 
 // Find returns a slice of product structs filtered from the product repository after applying the given filters
 func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*Result, error) {
+
 	r.addReadMutex.RLock()
 	defer r.addReadMutex.RUnlock()
 
