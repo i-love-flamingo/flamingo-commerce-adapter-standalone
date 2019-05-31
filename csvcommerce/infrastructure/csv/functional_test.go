@@ -1,6 +1,8 @@
-package infrastructure_test
+package csv_test
 
 import (
+	csvcommerceLoader "flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productSearch"
+	"flamingo.me/flamingo/v3/framework/flamingo"
 	"fmt"
 	"sort"
 	"testing"
@@ -8,17 +10,16 @@ import (
 	"path"
 	"runtime"
 
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productrepository"
+	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/productSearch"
 	"flamingo.me/flamingo-commerce/v3/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFactoryCanBuildSimpleTest(t *testing.T) {
-	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
-	assert.NoError(t, err)
+	rep := getRepositoryWithFixturesLoaded(t)
+
 
 	product, err := rep.FindByMarketplaceCode("1000000")
 	assert.NoError(t, err)
@@ -28,10 +29,8 @@ func TestFactoryCanBuildSimpleTest(t *testing.T) {
 }
 
 func TestFactoryCanBuildConfigurableTest(t *testing.T) {
-	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
-	assert.NoError(t, err)
+	rep := getRepositoryWithFixturesLoaded(t)
 
 	product, err := rep.FindByMarketplaceCode("CONF-1000000")
 	assert.NoError(t, err)
@@ -54,10 +53,8 @@ func TestPageSize(t *testing.T) {
 	pageSizeA := 3
 	pageSizeB := 6
 
-	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
-	assert.NoError(t, err)
+	rep := getRepositoryWithFixturesLoaded(t)
 
 	pageSizeFilterA := searchDomain.NewPaginationPageSizeFilter(pageSizeA)
 	productHits, err := rep.Find(pageSizeFilterA)
@@ -72,10 +69,8 @@ func TestPageSize(t *testing.T) {
 }
 
 func TestSortDirection(t *testing.T) {
-	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
-	assert.NoError(t, err)
+	rep := getRepositoryWithFixturesLoaded(t)
 
 	ascendingFilter := searchDomain.NewSortFilter("name", "A")
 	productHits, err := rep.Find(ascendingFilter)
@@ -117,13 +112,12 @@ func TestFilterByAttribute(t *testing.T) {
 	attributeName := "20000733_lactoseFreeClaim"
 	attributeValue := "30002654_yes"
 
-	factory := productrepository.InMemoryProductRepositoryFactory{}
 
-	rep, err := factory.BuildFromProductCSV(getAppDirectory()+"/../../csvCommerce/infrastructure/csv/fixture/products.csv", "en_GB", "GBP")
-	assert.NoError(t, err)
+	rep := getRepositoryWithFixturesLoaded(t)
 
 	attributeFilter := searchDomain.NewKeyValueFilter(attributeName, []string{attributeValue})
 	productHits, err := rep.Find(attributeFilter)
+	assert.NoError(t,err)
 	assert.NotNil(t, productHits)
 	assert.True(t, len(productHits.Hits) > 0, "expected at least a hit")
 	for _, hit := range productHits.Hits {
@@ -148,4 +142,24 @@ func getAppDirectory() string {
 	fmt.Printf("Filename : %q, Dir : %q\n", filename, path.Dir(filename))
 
 	return path.Dir(filename)
+}
+
+
+func getRepositoryWithFixturesLoaded(t *testing.T) productSearch.ProductRepository{
+	rep := &productSearch.InMemoryProductRepository{}
+	loader := csvcommerceLoader.Loader{}
+	loader.Inject(flamingo.NullLogger{},
+		&struct {
+			CsvFile  string `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.productCsvPath"`
+			Locale   string `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.locale"`
+			Currency string `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.currency"`
+		}{
+			Currency: "GBP",
+			Locale:   "en_GB",
+			CsvFile:  "fixture/products2.csv",
+		},
+	)
+	err := loader.Load(rep)
+	assert.NoError(t, err)
+	return rep
 }

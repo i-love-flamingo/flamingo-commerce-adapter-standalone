@@ -1,7 +1,9 @@
-package productrepository
+package productSearch
 
 import (
 	"errors"
+
+
 	"fmt"
 	"strings"
 
@@ -10,61 +12,80 @@ import (
 	"strconv"
 
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/csv"
-	inMemoryProductSearchInfrastructure "flamingo.me/flamingo-commerce-adapter-standalone/inMemoryProductSearch/infrastructure"
+
+	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/productSearch"
 	"flamingo.me/flamingo-commerce/v3/product/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 )
 
 type (
-	// InMemoryProductRepositoryFactory returns a Product Repository Type which is held in memory
-	InMemoryProductRepositoryFactory struct {
-		logger flamingo.Logger
+	// Loader returns a Product Repository Type which is held in memory
+	Loader struct {
+		logger   flamingo.Logger
+		csvFile  string
+		locale   string
+		currency string
 	}
 )
 
+var (
+	_ productSearch.Loader = &Loader{}
+)
 // Inject method to inject dependencies
-func (f *InMemoryProductRepositoryFactory) Inject(logger flamingo.Logger) {
+func (f *Loader) Inject(logger flamingo.Logger, config *struct {
+	CsvFile  string `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.productCsvPath"`
+	Locale   string `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.locale"`
+	Currency string `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.currency"`
+}) {
 	f.logger = logger
+	if config == nil {
+		return
+	}
+	f.csvFile = config.CsvFile
+	f.locale = config.Locale
+	f.currency = config.Currency
 }
 
-// BuildFromProductCSV reads Products from a CSV File and returns a Product Repository of the In Memory Type
-func (f *InMemoryProductRepositoryFactory) BuildFromProductCSV(csvFile string, locale string, currency string) (*inMemoryProductSearchInfrastructure.InMemoryProductRepository, error) {
-	rows, err := csv.ReadProductCSV(csvFile)
+func (f *Loader) Load(indexer productSearch.Index) error {
+	f.logger.Info(fmt.Sprintf("Start loading CSV file: %v  with locale: %v and currency %v",f.csvFile,f.locale,f.currency))
+	rows, err := csv.ReadProductCSV(f.csvFile)
 	if err != nil {
-		return nil, err
+		return errors.New(err.Error()+" / File: "+f.csvFile)
 	}
-
-	newRepo := inMemoryProductSearchInfrastructure.InMemoryProductRepository{}
-
 	for rowK, row := range rows {
 		if row["productType"] == "simple" {
-			product, err := f.buildSimpleProduct(row, locale, currency)
+			product, err := f.buildSimpleProduct(row, f.locale, f.currency)
 			if err != nil {
 				f.logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
 				continue
 			}
 
-			newRepo.Add(*product)
+			err = indexer.Add(*product)
+			if err != nil {
+				f.logger.Warn(fmt.Sprintf("Error adding row %v (%v)", rowK, err))
+			}
 		}
 	}
 
 	for rowK, row := range rows {
 		if row["productType"] == "configurable" {
-			product, err := f.buildConfigurableProduct(newRepo, row, locale, currency)
+			product, err := f.buildConfigurableProduct(indexer, row, f.locale, f.currency)
 			if err != nil {
 				f.logger.Warn(fmt.Sprintf("Error mapping row %v (%v)", rowK, err))
 				continue
 			}
 
-			newRepo.Add(*product)
+			err = indexer.Add(*product)
+			if err != nil {
+				f.logger.Warn(fmt.Sprintf("Error adding row %v (%v)", rowK, err))
+			}
 		}
 	}
-
-	return &newRepo, nil
+	return nil
 }
 
 // buildConfigurableProduct creates Products of the Configurable Type from CSV Rows
-func (f *InMemoryProductRepositoryFactory) buildConfigurableProduct(repo inMemoryProductSearchInfrastructure.InMemoryProductRepository, row map[string]string, locale string, currency string) (*domain.ConfigurableProduct, error) {
+func (f *Loader) buildConfigurableProduct(indexer productSearch.Index, row map[string]string, locale string, currency string) (*domain.ConfigurableProduct, error) {
 	err := f.validateRow(row, locale, currency, []string{"variantVariationAttributes", "CONFIGURABLE-products"})
 	if err != nil {
 		return nil, err
@@ -80,7 +101,7 @@ func (f *InMemoryProductRepositoryFactory) buildConfigurableProduct(repo inMemor
 	}
 
 	for _, vcode := range variantCodes {
-		variantProduct, err := repo.FindByMarketplaceCode(vcode)
+		variantProduct, err := indexer.FindByMarketplaceCode(vcode)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +128,7 @@ func splitTrimmed(value string) []string {
 }
 
 // validateRow ensures CSV Rows have the correct columns
-func (f *InMemoryProductRepositoryFactory) validateRow(row map[string]string, locale string, currency string, additionalRequiredCols []string) error {
+func (f *Loader) validateRow(row map[string]string, locale string, currency string, additionalRequiredCols []string) error {
 	additionalRequiredCols = append(additionalRequiredCols, []string{"marketplaceCode", "retailerCode", "title-" + locale, "metaKeywords-" + locale, "shortDescription-" + locale, "description-" + locale, "price-" + currency}...)
 	for _, requiredAttribute := range additionalRequiredCols {
 		if _, ok := row[requiredAttribute]; !ok {
@@ -119,7 +140,7 @@ func (f *InMemoryProductRepositoryFactory) validateRow(row map[string]string, lo
 }
 
 // getBasicProductData reads a CSV row and returns Basic Product Data Structs
-func (f *InMemoryProductRepositoryFactory) getBasicProductData(row map[string]string, locale string) domain.BasicProductData {
+func (f *Loader) getBasicProductData(row map[string]string, locale string) domain.BasicProductData {
 	attributes := make(map[string]domain.Attribute)
 
 	for key, data := range row {
@@ -156,12 +177,12 @@ func (f *InMemoryProductRepositoryFactory) getBasicProductData(row map[string]st
 }
 
 // getIdentifier returns only the Product Identifier (aka marketPlaceCode) from a map of strings (previously CSV Row)
-func (f *InMemoryProductRepositoryFactory) getIdentifier(row map[string]string) string {
+func (f *Loader) getIdentifier(row map[string]string) string {
 	return row["marketplaceCode"]
 }
 
 // buildSimpleProduct builds a Product of the Simple Type from a map of strings (previously a CSV Row)
-func (f *InMemoryProductRepositoryFactory) buildSimpleProduct(row map[string]string, locale string, currency string) (*domain.SimpleProduct, error) {
+func (f *Loader) buildSimpleProduct(row map[string]string, locale string, currency string) (*domain.SimpleProduct, error) {
 	err := f.validateRow(row, locale, currency, nil)
 	if err != nil {
 		return nil, err
@@ -187,7 +208,7 @@ func (f *InMemoryProductRepositoryFactory) buildSimpleProduct(row map[string]str
 }
 
 // getMedia gets the Product Images from a map of strings (previously a CSV Row)
-func (f *InMemoryProductRepositoryFactory) getMedia(row map[string]string, locale string) []domain.Media {
+func (f *Loader) getMedia(row map[string]string, locale string) []domain.Media {
 	var medias []domain.Media
 	if v, ok := row["listImage"]; ok {
 		medias = append(medias, domain.Media{

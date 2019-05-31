@@ -1,6 +1,7 @@
-package infrastructure
+package productSearch
 
 import (
+	"errors"
 	"log"
 	"math"
 	"sort"
@@ -13,6 +14,14 @@ import (
 )
 
 type (
+
+
+	// ProductRepository - interface
+	ProductRepository interface {
+		FindByMarketplaceCode(marketplaceCode string) (domain.BasicProduct, error)
+		Find(filters ...searchDomain.Filter) (*domain.SearchResult, error)
+	}
+
 	// InMemoryProductRepository serves as a Repository of Products held in memory
 	InMemoryProductRepository struct {
 		//marketplaceCodeIndex - index to get products from marketplaceCode
@@ -39,11 +48,19 @@ type (
 	}
 )
 
+var (
+	_ Index = &InMemoryProductRepository{}
+	_ ProductRepository = &InMemoryProductRepository{}
+)
 // Add appends a product to the Product Repository
 func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
 	r.addReadMutex.Lock()
 	defer r.addReadMutex.Unlock()
 
+	if (product.BaseData().MarketPlaceCode == "" ) {
+		log.Println("No marketplace code ")
+		return errors.New("No marketplace code ")
+	}
 	marketPlaceCode := product.BaseData().MarketPlaceCode
 	//Set reverseindex for marketplaceCode (the primary indendifier)
 	if r.marketplaceCodeIndex == nil {
@@ -81,19 +98,16 @@ func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
 func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string) (domain.BasicProduct, error) {
 	r.addReadMutex.RLock()
 	defer r.addReadMutex.RUnlock()
-
 	if product, ok := r.marketplaceCodeIndex[marketplaceCode]; ok {
 		return product, nil
 	}
-
 	return nil, domain.ProductNotFound{
 		MarketplaceCode: marketplaceCode,
 	}
-
 }
 
 // Find returns a slice of product structs filtered from the product repository after applying the given filters
-func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*Result, error) {
+func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*domain.SearchResult, error) {
 
 	r.addReadMutex.RLock()
 	defer r.addReadMutex.RUnlock()
@@ -166,11 +180,13 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*Resul
 		pageAmount = int(math.Ceil(float64(totalHits) / float64(pageSize)))
 	}
 
-	return &Result{
-		Hits:       productResults,
-		TotalHits:  totalHits,
-		PageSize:   pageSize,
-		TotalPages: pageAmount,
+	return &domain.SearchResult{
+		Hits: productResults,
+		Result: searchDomain.Result{
+			SearchMeta: searchDomain.SearchMeta{
+				NumResults: totalHits,
+				NumPages:   pageAmount,
+			}},
 	}, nil
 }
 

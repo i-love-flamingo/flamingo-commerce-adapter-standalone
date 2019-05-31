@@ -11,7 +11,7 @@ func TestReadCSV(t *testing.T) {
 	assert.Nil(t, rows)
 	assert.Error(t, err)
 
-	rows, err = ReadProductCSV("fixture/products.csv")
+	rows, err = ReadProductCSV("fixture/products2.csv")
 	assert.NoError(t, err, "no error expected")
 	assert.NotNil(t, rows)
 	assert.NotEmpty(t, rows)
