@@ -37,7 +37,7 @@ func (f *Loader) Inject(logger flamingo.Logger, config *struct {
 	Locale   string `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.locale"`
 	Currency string `inject:"config:flamingo-commerce-adapter-standalone.csvCommerce.currency"`
 }) {
-	f.logger = logger
+	f.logger = logger.WithField(flamingo.LogKeyModule, "csvcommerce").WithField(flamingo.LogKeyCategory, "Loader")
 	if config == nil {
 		return
 	}
@@ -155,6 +155,7 @@ func (f *Loader) getBasicProductData(row map[string]string, locale string) domai
 	for _, categoryCode := range strings.Split(row["categories"], ",") {
 		categories = append(categories, domain.CategoryTeaser{
 			Code: categoryCode,
+			Name: categoryCode,
 		})
 	}
 

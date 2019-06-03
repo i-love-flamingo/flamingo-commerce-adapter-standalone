@@ -7,6 +7,7 @@ require (
 	github.com/disintegration/imaging v1.5.0
 	github.com/stretchr/testify v1.3.0
 	golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81 // indirect
+	google.golang.org/api v0.1.0
 )
 
 replace flamingo.me/flamingo/v3 => ../flamingo

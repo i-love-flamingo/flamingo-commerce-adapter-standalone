@@ -2,8 +2,10 @@ package productSearch
 
 import (
 	"flamingo.me/dingo"
+	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/category"
+	"flamingo.me/flamingo-commerce/v3/category/domain"
 
-	 "flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/product"
+	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/product"
 	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/productSearch"
 	productdomain "flamingo.me/flamingo-commerce/v3/product/domain"
 
@@ -13,6 +15,9 @@ import (
 type (
 	// Module for product client stuff
 	Module struct{}
+
+	// CategoryModule registers the Category Adapter that uses the productRepositry
+	CategoryModule struct{}
 
 
 )
@@ -31,5 +36,11 @@ func (module *Module) Configure(injector *dingo.Injector) {
 			return rep
 		}).In(dingo.ChildSingleton)
 
+}
+
+
+// Configure DI
+func (module *CategoryModule) Configure(injector *dingo.Injector) {
+	injector.Bind(new(domain.CategoryService)).To(category.Adapter{})
 }
 

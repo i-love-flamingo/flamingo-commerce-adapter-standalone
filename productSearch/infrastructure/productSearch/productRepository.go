@@ -20,6 +20,8 @@ type (
 	ProductRepository interface {
 		FindByMarketplaceCode(marketplaceCode string) (domain.BasicProduct, error)
 		Find(filters ...searchDomain.Filter) (*domain.SearchResult, error)
+		CategoryTree(code string) (categoryDomain.Tree, error)
+		Category(code string) (categoryDomain.Category, error)
 	}
 
 	// InMemoryProductRepository serves as a Repository of Products held in memory
@@ -30,9 +32,13 @@ type (
 		//attributeReverseIndex - index to get products from attribute
 		attributeReverseIndex map[string]map[string][]string
 
-		//categoriesReverseIndex - index to get products by categoryCode
-		categoriesReverseIndex map[string][]string
-		addReadMutex           sync.RWMutex
+		//productsByCategoriesReverseIndex - index to get products by categoryCode
+		productsByCategoriesReverseIndex map[string][]string
+		addReadMutex                     sync.RWMutex
+
+		//for category adapters:
+		rootCategory *categoryDomain.TreeData
+		categorTreeIndex map[string]*categoryDomain.TreeData
 	}
 
 	Result struct {
@@ -58,7 +64,7 @@ func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
 	defer r.addReadMutex.Unlock()
 
 	if (product.BaseData().MarketPlaceCode == "" ) {
-		log.Println("No marketplace code ")
+		log.Println("No marketplace code")
 		return errors.New("No marketplace code ")
 	}
 	marketPlaceCode := product.BaseData().MarketPlaceCode
@@ -72,13 +78,22 @@ func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
 	r.marketplaceCodeIndex[product.BaseData().MarketPlaceCode] = product
 
 	//Now add product to category indexes:
-	if r.categoriesReverseIndex == nil {
-		r.categoriesReverseIndex = make(map[string][]string)
+	if r.productsByCategoriesReverseIndex == nil {
+		r.productsByCategoriesReverseIndex = make(map[string][]string)
 	}
-	for _, categoryTeaser := range product.BaseData().Categories {
-		r.categoriesReverseIndex[categoryTeaser.Code] = append(r.categoriesReverseIndex[categoryTeaser.Code], marketPlaceCode)
 
+
+	for _, categoryTeaser := range product.BaseData().Categories {
+		r.productsByCategoriesReverseIndex[categoryTeaser.Code] = append(r.productsByCategoriesReverseIndex[categoryTeaser.Code], marketPlaceCode)
+		categoryPathForMergeIn := r.categoryTeaserToCategoryTree(categoryTeaser, nil)
+		r.rootCategory = r.addCategoryPath(r.rootCategory,categoryPathForMergeIn)
 	}
+	if product.BaseData().MainCategory.Code != "" {
+		r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code] = append(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode)
+		categoryPathForMergeIn := r.categoryTeaserToCategoryTree(product.BaseData().MainCategory, nil)
+		r.rootCategory  = r.addCategoryPath(r.rootCategory,categoryPathForMergeIn)
+	}
+
 
 	//Now fill the reverse index for all products attributes:
 	if r.attributeReverseIndex == nil {
@@ -106,6 +121,40 @@ func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string
 	}
 }
 
+func (r *InMemoryProductRepository) CategoryTree(code string) (categoryDomain.Tree, error)  {
+	if r.rootCategory == nil {
+		return nil,  errors.New("not found")
+	}
+	if code == "" {
+		return r.rootCategory, nil
+	}
+	if tree, ok := r.categorTreeIndex[code]; ok {
+		return tree, nil
+	}
+	return nil, errors.New("not found")
+}
+
+
+func (r *InMemoryProductRepository) Category(code string) (categoryDomain.Category, error)  {
+	if r.rootCategory == nil {
+		return nil,  errors.New("not found")
+	}
+	if code == "" {
+		return &categoryDomain.CategoryData{
+			CategoryCode: r.rootCategory.CategoryCode,
+			CategoryName: r.rootCategory.CategoryName,
+		}, nil
+	}
+	if tree, ok := r.categorTreeIndex[code]; ok {
+		return &categoryDomain.CategoryData{
+			CategoryCode: tree.CategoryCode,
+			CategoryName: tree.CategoryName,
+		}, nil
+	}
+	return nil, errors.New("not found")
+}
+
+
 // Find returns a slice of product structs filtered from the product repository after applying the given filters
 func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*domain.SearchResult, error) {
 
@@ -126,7 +175,7 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*domai
 			}
 		case categoryDomain.CategoryFacet:
 			for _, filterValue := range filterValues {
-				matchingCodes := r.categoriesReverseIndex[filterValue]
+				matchingCodes := r.productsByCategoriesReverseIndex[filterValue]
 				matchingMarketplaceCodes.intersection(matchingCodes)
 			}
 		}
@@ -217,4 +266,68 @@ func (s *marketPlaceCodeSet) intersection(set2 []string) {
 		}
 	}
 	s.currentSet = result
+}
+
+
+//addCategoryPath - merges in the given categoryToAdd to the  passed currentExisting
+// also adds new categories to the reverse index
+func (r *InMemoryProductRepository) addCategoryPath(currentExisting *categoryDomain.TreeData, categoryToAdd *categoryDomain.TreeData) *categoryDomain.TreeData {
+	if r.categorTreeIndex == nil {
+		r.categorTreeIndex = make(map[string]*categoryDomain.TreeData)
+	}
+	if currentExisting == nil {
+		clone := *categoryToAdd
+		currentExisting = &clone
+		currentExisting.SubTreesData = nil
+		r.categorTreeIndex[currentExisting.CategoryCode] = currentExisting
+	}
+	if currentExisting.CategoryCode != categoryToAdd.CategoryCode {
+		return currentExisting
+	}
+	for _,subTreeToAddTree := range categoryToAdd.SubTreesData {
+		exists := false
+		for _,existingSubTree := range currentExisting.SubTreesData {
+			if existingSubTree.CategoryCode == subTreeToAddTree.CategoryCode {
+				exists = true
+				existingSubTree = r.addCategoryPath(existingSubTree,subTreeToAddTree)
+			}
+		}
+		if !exists {
+			currentExisting.SubTreesData = append(currentExisting.SubTreesData,subTreeToAddTree)
+			r.categorTreeIndex[subTreeToAddTree.CategoryCode] = subTreeToAddTree
+		}
+	}
+	return currentExisting
+}
+
+/**
+  sub_sub --parent--> sub --parent--> root
+
+
+  Passed is "sub_sub"
+
+  Returned is "root"
+
+ */
+func (r *InMemoryProductRepository) categoryTeaserToCategoryTree(teaser domain.CategoryTeaser, child *categoryDomain.TreeData) *categoryDomain.TreeData {
+	if teaser.Code == "" {
+		return nil
+	}
+	var childs []*categoryDomain.TreeData
+	if child != nil {
+		childs = []*categoryDomain.TreeData{child}
+	}
+	currentCategory := &categoryDomain.TreeData{
+		IsActive:true,
+		CategoryName: teaser.Name,
+		CategoryCode: teaser.Code,
+		SubTreesData: childs,
+	}
+
+	if teaser.Parent == nil {
+		return currentCategory
+	}
+
+	return r.categoryTeaserToCategoryTree(*teaser.Parent,currentCategory)
+
 }

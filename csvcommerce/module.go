@@ -30,7 +30,7 @@ type (
 // Configure DI
 func (module *ProductModule) Configure(injector *dingo.Injector) {
 	//Register Loader for productSearch
-	injector.Bind((*productSearch.Loader)(nil)).To(productSearch2.Loader{}).In(dingo.ChildSingleton)
+	injector.Bind((*productSearch.Loader)(nil)).To(productSearch2.Loader{})
 
 	web.BindRoutes(injector, new(routes))
 }

@@ -37,6 +37,7 @@ func TestFactoryCanBuildConfigurableTest(t *testing.T) {
 	assert.NotNil(t, product)
 	assert.Equal(t, product.BaseData().MarketPlaceCode, "CONF-1000000")
 	assert.Equal(t, product.BaseData().Title, "Hello Kitty Candy Cup Configurable")
+	assert.Equal(t, product.BaseData().MainCategory.Code, "products")
 
 	assert.IsType(t, domain.ConfigurableProduct{}, product)
 
