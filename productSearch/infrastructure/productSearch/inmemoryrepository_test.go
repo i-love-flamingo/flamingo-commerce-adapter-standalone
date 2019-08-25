@@ -1,6 +1,7 @@
 package productSearch
 
 import (
+	"flamingo.me/flamingo/v3/framework/flamingo"
 	"github.com/stretchr/testify/require"
 	"testing"
 
@@ -11,7 +12,9 @@ import (
 
 
 func TestInMemoryProductRepository_AddProduct(t *testing.T) {
-	s := &InMemoryProductRepository{}
+	s := &InMemoryProductRepository{
+		logger: flamingo.NullLogger{},
+	}
 
 	product := domain.SimpleProduct{
 		Identifier: "id",
@@ -28,6 +31,9 @@ func TestInMemoryProductRepository_AddProduct(t *testing.T) {
 	}
 	err := s.Add(product)
 	assert.NoError(t,err)
+
+	err = s.Add(product)
+
 	found, _ := s.FindByMarketplaceCode("id")
 	assert.Equal(t, "title", found.BaseData().Title)
 

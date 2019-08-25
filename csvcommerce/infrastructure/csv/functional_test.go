@@ -2,6 +2,7 @@ package csv_test
 
 import (
 	csvcommerceLoader "flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productSearch"
+	domain2 "flamingo.me/flamingo-commerce-adapter-standalone/productSearch/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"fmt"
 	"sort"
@@ -146,7 +147,7 @@ func getAppDirectory() string {
 }
 
 
-func getRepositoryWithFixturesLoaded(t *testing.T) productSearch.ProductRepository{
+func getRepositoryWithFixturesLoaded(t *testing.T) domain2.ProductRepository{
 	rep := &productSearch.InMemoryProductRepository{}
 	loader := csvcommerceLoader.Loader{}
 	loader.Inject(flamingo.NullLogger{},

@@ -2,7 +2,7 @@ package productSearch
 
 import (
 	"errors"
-
+	productSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/productSearch/domain"
 
 	"fmt"
 	"strings"
@@ -13,7 +13,6 @@ import (
 
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/csv"
 
-	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/productSearch"
 	"flamingo.me/flamingo-commerce/v3/product/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 )
@@ -29,7 +28,7 @@ type (
 )
 
 var (
-	_ productSearch.Loader = &Loader{}
+	_ productSearchDomain.Loader = &Loader{}
 )
 // Inject method to inject dependencies
 func (f *Loader) Inject(logger flamingo.Logger, config *struct {
@@ -46,7 +45,7 @@ func (f *Loader) Inject(logger flamingo.Logger, config *struct {
 	f.currency = config.Currency
 }
 
-func (f *Loader) Load(indexer productSearch.Index) error {
+func (f *Loader) Load(indexer productSearchDomain.ProductRepository) error {
 	f.logger.Info(fmt.Sprintf("Start loading CSV file: %v  with locale: %v and currency %v",f.csvFile,f.locale,f.currency))
 	rows, err := csv.ReadProductCSV(f.csvFile)
 	if err != nil {
@@ -85,7 +84,7 @@ func (f *Loader) Load(indexer productSearch.Index) error {
 }
 
 // buildConfigurableProduct creates Products of the Configurable Type from CSV Rows
-func (f *Loader) buildConfigurableProduct(indexer productSearch.Index, row map[string]string, locale string, currency string) (*domain.ConfigurableProduct, error) {
+func (f *Loader) buildConfigurableProduct(indexer productSearchDomain.ProductRepository, row map[string]string, locale string, currency string) (*domain.ConfigurableProduct, error) {
 	err := f.validateRow(row, locale, currency, []string{"variantVariationAttributes", "CONFIGURABLE-products"})
 	if err != nil {
 		return nil, err

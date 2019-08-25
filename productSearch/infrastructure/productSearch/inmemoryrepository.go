@@ -2,6 +2,8 @@ package productSearch
 
 import (
 	"errors"
+	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/domain"
+	"flamingo.me/flamingo/v3/framework/flamingo"
 	"log"
 	"math"
 	"sort"
@@ -9,25 +11,16 @@ import (
 
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 
-	"flamingo.me/flamingo-commerce/v3/product/domain"
+	productDomain "flamingo.me/flamingo-commerce/v3/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 )
 
 type (
 
-
-	// ProductRepository - interface
-	ProductRepository interface {
-		FindByMarketplaceCode(marketplaceCode string) (domain.BasicProduct, error)
-		Find(filters ...searchDomain.Filter) (*domain.SearchResult, error)
-		CategoryTree(code string) (categoryDomain.Tree, error)
-		Category(code string) (categoryDomain.Category, error)
-	}
-
 	// InMemoryProductRepository serves as a Repository of Products held in memory
 	InMemoryProductRepository struct {
 		//marketplaceCodeIndex - index to get products from marketplaceCode
-		marketplaceCodeIndex map[string]domain.BasicProduct
+		marketplaceCodeIndex map[string]productDomain.BasicProduct
 
 		//attributeReverseIndex - index to get products from attribute
 		attributeReverseIndex map[string]map[string][]string
@@ -39,13 +32,8 @@ type (
 		//for category adapters:
 		rootCategory *categoryDomain.TreeData
 		categorTreeIndex map[string]*categoryDomain.TreeData
-	}
 
-	Result struct {
-		TotalHits  int
-		PageSize   int
-		TotalPages int
-		Hits       []domain.BasicProduct
+		logger flamingo.Logger
 	}
 
 	marketPlaceCodeSet struct {
@@ -55,11 +43,22 @@ type (
 )
 
 var (
-	_ Index = &InMemoryProductRepository{}
-	_ ProductRepository = &InMemoryProductRepository{}
+	_ domain.ProductRepository = &InMemoryProductRepository{}
 )
+
+
+func (r *InMemoryProductRepository) PrepareIndex() error {
+	return nil
+}
+
+
+
+func (r *InMemoryProductRepository) Inject(logger flamingo.Logger)  {
+	r.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone").WithField(flamingo.LogKeyCategory, "InMemoryProductRepository")
+}
+
 // Add appends a product to the Product Repository
-func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
+func (r *InMemoryProductRepository) Add(product productDomain.BasicProduct) error {
 	r.addReadMutex.Lock()
 	defer r.addReadMutex.Unlock()
 
@@ -70,10 +69,12 @@ func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
 	marketPlaceCode := product.BaseData().MarketPlaceCode
 	//Set reverseindex for marketplaceCode (the primary indendifier)
 	if r.marketplaceCodeIndex == nil {
-		r.marketplaceCodeIndex = make(map[string]domain.BasicProduct)
+		r.marketplaceCodeIndex = make(map[string]productDomain.BasicProduct)
 	}
 	if r.marketplaceCodeIndex[marketPlaceCode] != nil {
-		log.Println("Duplicate for marketplace code " + marketPlaceCode)
+		err := errors.New("Duplicate for marketplace code " + marketPlaceCode)
+		r.logger.Error(err)
+		return err
 	}
 	r.marketplaceCodeIndex[product.BaseData().MarketPlaceCode] = product
 
@@ -110,13 +111,13 @@ func (r *InMemoryProductRepository) Add(product domain.BasicProduct) error {
 }
 
 // FindByMarketplaceCode returns a product struct for the given marketplaceCode
-func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string) (domain.BasicProduct, error) {
+func (r *InMemoryProductRepository) FindByMarketplaceCode(marketplaceCode string) (productDomain.BasicProduct, error) {
 	r.addReadMutex.RLock()
 	defer r.addReadMutex.RUnlock()
 	if product, ok := r.marketplaceCodeIndex[marketplaceCode]; ok {
 		return product, nil
 	}
-	return nil, domain.ProductNotFound{
+	return nil, productDomain.ProductNotFound{
 		MarketplaceCode: marketplaceCode,
 	}
 }
@@ -156,12 +157,12 @@ func (r *InMemoryProductRepository) Category(code string) (categoryDomain.Catego
 
 
 // Find returns a slice of product structs filtered from the product repository after applying the given filters
-func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*domain.SearchResult, error) {
+func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*productDomain.SearchResult, error) {
 
 	r.addReadMutex.RLock()
 	defer r.addReadMutex.RUnlock()
 
-	var productResults []domain.BasicProduct
+	var productResults []productDomain.BasicProduct
 
 	var matchingMarketplaceCodes marketPlaceCodeSet
 
@@ -229,7 +230,7 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*domai
 		pageAmount = int(math.Ceil(float64(totalHits) / float64(pageSize)))
 	}
 
-	return &domain.SearchResult{
+	return &productDomain.SearchResult{
 		Hits: productResults,
 		Result: searchDomain.Result{
 			SearchMeta: searchDomain.SearchMeta{
@@ -239,8 +240,8 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*domai
 	}, nil
 }
 
-func (r *InMemoryProductRepository) getMatchingProducts(codes []string) []domain.BasicProduct {
-	var matches []domain.BasicProduct
+func (r *InMemoryProductRepository) getMatchingProducts(codes []string) []productDomain.BasicProduct {
+	var matches []productDomain.BasicProduct
 	for code, product := range r.marketplaceCodeIndex {
 		for _, codeToFind := range codes {
 			if code == codeToFind {
@@ -309,7 +310,7 @@ func (r *InMemoryProductRepository) addCategoryPath(currentExisting *categoryDom
   Returned is "root"
 
  */
-func (r *InMemoryProductRepository) categoryTeaserToCategoryTree(teaser domain.CategoryTeaser, child *categoryDomain.TreeData) *categoryDomain.TreeData {
+func (r *InMemoryProductRepository) categoryTeaserToCategoryTree(teaser productDomain.CategoryTeaser, child *categoryDomain.TreeData) *categoryDomain.TreeData {
 	if teaser.Code == "" {
 		return nil
 	}

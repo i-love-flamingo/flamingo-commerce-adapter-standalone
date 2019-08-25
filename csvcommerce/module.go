@@ -4,7 +4,7 @@ import (
 	"flamingo.me/dingo"
 	productSearch2 "flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productSearch"
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/interfaces/controller"
-	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/productSearch"
+	productSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/productSearch/domain"
 
 	productSearchModule "flamingo.me/flamingo-commerce-adapter-standalone/productSearch"
 	categorydomain "flamingo.me/flamingo-commerce/v3/category/domain"
@@ -30,7 +30,7 @@ type (
 // Configure DI
 func (module *ProductModule) Configure(injector *dingo.Injector) {
 	//Register Loader for productSearch
-	injector.Bind((*productSearch.Loader)(nil)).To(productSearch2.Loader{})
+	injector.Bind((*productSearchDomain.Loader)(nil)).To(productSearch2.Loader{})
 
 	web.BindRoutes(injector, new(routes))
 }

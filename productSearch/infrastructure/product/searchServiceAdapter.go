@@ -2,7 +2,7 @@ package product
 
 import (
 	"context"
-	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/productSearch"
+	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/domain"
 
 	productDomain "flamingo.me/flamingo-commerce/v3/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
@@ -11,7 +11,7 @@ import (
 type (
 	// SearchServiceAdapter implements methods to search in a product repository
 	SearchServiceAdapter struct {
-		productRepository productSearch.ProductRepository
+		productRepository domain.ProductRepository
 	}
 )
 
@@ -22,7 +22,7 @@ var (
 
 
 //Inject - dingo injector
-func (ps *SearchServiceAdapter) Inject(productRepository productSearch.ProductRepository)  {
+func (ps *SearchServiceAdapter) Inject(productRepository domain.ProductRepository)  {
 	ps.productRepository = productRepository
 }
 

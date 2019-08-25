@@ -2,7 +2,7 @@ package category
 
 import (
 	"context"
-	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/infrastructure/productSearch"
+	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/domain"
 
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 )
@@ -10,7 +10,7 @@ import (
 type (
 	//Adapter - Adapter that uses a category csv (WIP)
 	Adapter struct {
-		productRepository productSearch.ProductRepository
+		productRepository domain.ProductRepository
 	}
 )
 
@@ -21,7 +21,7 @@ var (
 )
 
 //Inject - dingo injector
-func (ps *Adapter) Inject(productRepository productSearch.ProductRepository)  {
+func (ps *Adapter) Inject(productRepository domain.ProductRepository)  {
 	ps.productRepository = productRepository
 }
 
