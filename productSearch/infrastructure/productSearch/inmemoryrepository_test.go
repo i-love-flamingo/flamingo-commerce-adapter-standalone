@@ -1,6 +1,7 @@
 package productSearch
 
 import (
+	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -9,7 +10,6 @@ import (
 	"flamingo.me/flamingo-commerce/v3/product/domain"
 	"github.com/stretchr/testify/assert"
 )
-
 
 func TestInMemoryProductRepository_AddProduct(t *testing.T) {
 	s := &InMemoryProductRepository{
@@ -20,8 +20,21 @@ func TestInMemoryProductRepository_AddProduct(t *testing.T) {
 		Identifier: "id",
 		BasicProductData: domain.BasicProductData{
 			MarketPlaceCode: "id",
-			Title: "title",
-			MainCategory:domain.CategoryTeaser{
+			Title:           "a title",
+			MainCategory: domain.CategoryTeaser{
+				Code: "Sub",
+				Parent: &domain.CategoryTeaser{
+					Code: "Root",
+				},
+			},
+		},
+	}
+	product2 := domain.SimpleProduct{
+		Identifier: "id2",
+		BasicProductData: domain.BasicProductData{
+			MarketPlaceCode: "id2",
+			Title:           "b title",
+			MainCategory: domain.CategoryTeaser{
 				Code: "Sub",
 				Parent: &domain.CategoryTeaser{
 					Code: "Root",
@@ -30,28 +43,66 @@ func TestInMemoryProductRepository_AddProduct(t *testing.T) {
 		},
 	}
 	err := s.Add(product)
-	assert.NoError(t,err)
+	assert.NoError(t, err)
 
+	//Check for error if duplicate is tried to be indexed
 	err = s.Add(product)
+	assert.Error(t, err)
+
+	//index product nr 2
+	err = s.Add(product2)
+	assert.NoError(t, err)
 
 	found, _ := s.FindByMarketplaceCode("id")
-	assert.Equal(t, "title", found.BaseData().Title)
+	assert.Equal(t, "a title", found.BaseData().Title)
 
 	cat, _ := s.Category("")
-	if assert.NotNil(t,cat) {
+	if assert.NotNil(t, cat) {
 		assert.Equal(t, "Root", cat.Code())
 	}
 
 	cat, _ = s.Category("Sub")
-	if assert.NotNil(t,cat) {
+	if assert.NotNil(t, cat) {
 		assert.Equal(t, "Sub", cat.Code())
 	}
 
 	result, _ := s.Find(categoryDomain.CategoryFacet{
-		CategoryCode:"Sub",
+		CategoryCode: "Sub",
+	}, searchDomain.NewSortFilter("title", "A"))
+	require.Len(t, result.Hits, 2, "expect 2 results for category search")
+	assert.Equal(t, "a title", result.Hits[0].BaseData().Title)
+	assert.Equal(t, "b title", result.Hits[1].BaseData().Title)
+
+	//test pagination
+	t.Run("Test pagination",func(t *testing.T) {
+		result, _ = s.Find(categoryDomain.CategoryFacet{
+			CategoryCode: "Sub",
+		}, searchDomain.NewPaginationPageFilter(1), searchDomain.NewSortFilter("title", "A"))
+
+		require.Len(t, result.Hits, 2, "expect 2 results for category search on page 1")
+		assert.Equal(t, "a title", result.Hits[0].BaseData().Title, )
+
+		result, _ = s.Find(
+			categoryDomain.CategoryFacet{
+				CategoryCode: "Sub",
+			},
+			searchDomain.NewPaginationPageFilter(2),
+			searchDomain.NewPaginationPageSizeFilter(10),
+			searchDomain.NewSortFilter("title", "A"),
+		)
+		assert.Len(t, result.Hits, 0, "expected no results on page 2")
+
+		result, _ = s.Find(
+			categoryDomain.CategoryFacet{
+				CategoryCode: "Sub",
+			},
+			searchDomain.NewPaginationPageFilter(2),
+			searchDomain.NewPaginationPageSizeFilter(1),
+			searchDomain.NewSortFilter("title", "A"),
+		)
+		require.Len(t,result.Hits,1)
+		assert.Equal(t,"b title",result.Hits[0].BaseData().Title)
 	})
-	require.Len(t,result.Hits,1)
-	assert.Equal(t,"title",result.Hits[0].BaseData().Title)
 
 }
 
@@ -112,16 +163,16 @@ func TestInMemoryProductRepository_addCategoryPath(t *testing.T) {
 		},
 	}
 	s := &InMemoryProductRepository{}
-	s.addCategoryPath(existingTree,mergeInTree)
-	s.addCategoryPath(existingTree,mergeInTree2)
+	s.addCategoryPath(existingTree, mergeInTree)
+	s.addCategoryPath(existingTree, mergeInTree2)
 
-	assert.Equal(t, "root",existingTree.CategoryCode)
+	assert.Equal(t, "root", existingTree.CategoryCode)
 
-	assert.Equal(t, "sub1",existingTree.SubTreesData[0].CategoryCode)
-	assert.Equal(t, "sub2",existingTree.SubTreesData[1].CategoryCode)
-	assert.Equal(t, "sub2-sub",existingTree.SubTreesData[1].SubTreesData[0].CategoryCode)
+	assert.Equal(t, "sub1", existingTree.SubTreesData[0].CategoryCode)
+	assert.Equal(t, "sub2", existingTree.SubTreesData[1].CategoryCode)
+	assert.Equal(t, "sub2-sub", existingTree.SubTreesData[1].SubTreesData[0].CategoryCode)
 
-	assert.Equal(t, "sub3",existingTree.SubTreesData[2].CategoryCode)
-	assert.Equal(t, "sub3-sub",existingTree.SubTreesData[2].SubTreesData[0].CategoryCode)
+	assert.Equal(t, "sub3", existingTree.SubTreesData[2].CategoryCode)
+	assert.Equal(t, "sub3-sub", existingTree.SubTreesData[2].SubTreesData[0].CategoryCode)
 
 }

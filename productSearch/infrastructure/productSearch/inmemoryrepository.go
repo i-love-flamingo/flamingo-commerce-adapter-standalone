@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flamingo.me/flamingo-commerce-adapter-standalone/productSearch/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
-	"log"
 	"math"
 	"sort"
 	"sync"
@@ -63,7 +62,6 @@ func (r *InMemoryProductRepository) Add(product productDomain.BasicProduct) erro
 	defer r.addReadMutex.Unlock()
 
 	if (product.BaseData().MarketPlaceCode == "" ) {
-		log.Println("No marketplace code")
 		return errors.New("No marketplace code ")
 	}
 	marketPlaceCode := product.BaseData().MarketPlaceCode
@@ -90,7 +88,9 @@ func (r *InMemoryProductRepository) Add(product productDomain.BasicProduct) erro
 		r.rootCategory = r.addCategoryPath(r.rootCategory,categoryPathForMergeIn)
 	}
 	if product.BaseData().MainCategory.Code != "" {
-		r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code] = append(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode)
+		if !inSlice(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code],marketPlaceCode) {
+			r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code] = append(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode)
+		}
 		categoryPathForMergeIn := r.categoryTeaserToCategoryTree(product.BaseData().MainCategory, nil)
 		r.rootCategory  = r.addCategoryPath(r.rootCategory,categoryPathForMergeIn)
 	}
@@ -166,9 +166,13 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*produ
 
 	var matchingMarketplaceCodes marketPlaceCodeSet
 
+	pageSize := 100
+	pageNumber := 1
+	sortField := "relevance"
+	sortDirection := searchDomain.SortDirectionAscending
 	for _, filter := range filters {
 		filterKey, filterValues := filter.Value()
-		switch filter.(type) {
+		switch f := filter.(type) {
 		case *searchDomain.KeyValueFilter:
 			for _, filterValue := range filterValues {
 				matchingCodes := r.attributeReverseIndex[filterKey][filterValue]
@@ -179,8 +183,14 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*produ
 				matchingCodes := r.productsByCategoriesReverseIndex[filterValue]
 				matchingMarketplaceCodes.intersection(matchingCodes)
 			}
+		case *searchDomain.PaginationPageSize:
+			pageSize = f.GetPageSize()
+		case *searchDomain.PaginationPage:
+			pageNumber = f.GetPage()
+		case *searchDomain.SortFilter:
+			sortField = f.Field()
+			sortDirection = f.Direction()
 		}
-
 	}
 
 	if !matchingMarketplaceCodes.initialFilled {
@@ -194,38 +204,42 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*produ
 	}
 
 	// Sort the Results
-	for _, filter := range filters {
-		if sortFilter, ok := filter.(*searchDomain.SortFilter); ok {
-			k, v := sortFilter.Value()
+	sort.Slice(productResults, func(i, j int) bool {
+		iV := productResults[i].BaseData().Attributes[sortField].Value()
+		jV := productResults[j].BaseData().Attributes[sortField].Value()
 
-			sort.Slice(productResults, func(i, j int) bool {
-				if v[0] == "A" {
-					return productResults[i].BaseData().Attributes[k].Value() < productResults[j].BaseData().Attributes[k].Value()
-				}
-
-				return productResults[i].BaseData().Attributes[k].Value() > productResults[j].BaseData().Attributes[k].Value()
-			})
+		if sortField == "title" || sortField == "relevance" {
+			iV = productResults[i].BaseData().Title
+			jV = productResults[j].BaseData().Title
 		}
-	}
+
+		if sortDirection == searchDomain.SortDirectionAscending {
+			return  iV < jV
+		}
+
+		return iV > jV
+	})
+
+
 
 	totalHits := len(productResults)
-	pageSize := int(0)
+
 	pageAmount := int(0)
 
-	// Limit the Results
-	for _, filter := range filters {
-		if pageSizeFilter, ok := filter.(*searchDomain.PaginationPageSize); ok {
-			size := pageSizeFilter.GetPageSize()
-			pageSize = size
-			if len(productResults) < size {
-				size = len(productResults)
-			}
-
-			if size > 0 {
-				productResults = productResults[:size]
-			}
-		}
+	if pageNumber < 0 {
+		pageNumber = 0
 	}
+	start := (pageNumber-1 )* pageSize
+
+	if start > len(productResults) {
+		start = len(productResults)
+	}
+	stop := start + pageSize
+	if stop > len(productResults) {
+		stop = len(productResults)
+	}
+	productResults = productResults[start:stop]
+
 	if pageSize > 0 {
 		pageAmount = int(math.Ceil(float64(totalHits) / float64(pageSize)))
 	}
@@ -236,11 +250,13 @@ func (r *InMemoryProductRepository) Find(filters ...searchDomain.Filter) (*produ
 			SearchMeta: searchDomain.SearchMeta{
 				NumResults: totalHits,
 				NumPages:   pageAmount,
+				Page:pageNumber,
 			}},
 	}, nil
 }
 
 func (r *InMemoryProductRepository) getMatchingProducts(codes []string) []productDomain.BasicProduct {
+
 	var matches []productDomain.BasicProduct
 	for code, product := range r.marketplaceCodeIndex {
 		for _, codeToFind := range codes {
@@ -331,4 +347,14 @@ func (r *InMemoryProductRepository) categoryTeaserToCategoryTree(teaser productD
 
 	return r.categoryTeaserToCategoryTree(*teaser.Parent,currentCategory)
 
+}
+
+
+func inSlice(list []string, search string) bool {
+	for _,v := range list {
+		if v == search {
+			return true
+		}
+	}
+	return false
 }
