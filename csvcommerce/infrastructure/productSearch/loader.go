@@ -189,19 +189,29 @@ func (f *Loader) buildSimpleProduct(row map[string]string, locale string, curren
 	}
 
 	price, _ := strconv.ParseFloat(row["price-"+currency], 64)
-
+	specialPrice, specialPriceErr := strconv.ParseFloat(row["specialPrice-"+currency], 64)
+	hasSpecialPrice := true
+	if specialPriceErr != nil {
+		hasSpecialPrice = false
+	}
 	simple := domain.SimpleProduct{
 		Identifier:       f.getIdentifier(row),
 		BasicProductData: f.getBasicProductData(row, locale),
 		Saleable: domain.Saleable{
 			ActivePrice: domain.PriceInfo{
 				Default: priceDomain.NewFromFloat(price, currency).GetPayable(),
+				IsDiscounted:hasSpecialPrice,
+				Discounted:priceDomain.NewFromFloat(specialPrice, currency).GetPayable(),
+
 			},
 		},
 	}
 
 	simple.Teaser = domain.TeaserData{
 		TeaserPrice: simple.Saleable.ActivePrice,
+		ShortDescription:simple.BasicProductData.ShortDescription,
+		ShortTitle:simple.BasicProductData.Title,
+		MarketPlaceCode:simple.BasicProductData.MarketPlaceCode,
 	}
 
 	return &simple, nil
