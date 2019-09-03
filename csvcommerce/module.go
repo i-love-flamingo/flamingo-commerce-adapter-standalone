@@ -5,6 +5,7 @@ import (
 	productSearch2 "flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/infrastructure/productSearch"
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvcommerce/interfaces/controller"
 	productSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/productSearch/domain"
+	"flamingo.me/flamingo/v3/framework/config"
 
 	productSearchModule "flamingo.me/flamingo-commerce-adapter-standalone/productSearch"
 	categorydomain "flamingo.me/flamingo-commerce/v3/category/domain"
@@ -24,7 +25,6 @@ var (
 type (
 	// ProductModule for product stuff
 	ProductModule struct{}
-
 )
 
 // Configure DI
@@ -34,7 +34,6 @@ func (module *ProductModule) Configure(injector *dingo.Injector) {
 
 	web.BindRoutes(injector, new(routes))
 }
-
 
 type routes struct {
 	controller *controller.ImageController
@@ -49,10 +48,22 @@ func (r *routes) Routes(registry *web.RouterRegistry) {
 	registry.Route("/image/:size/:filename", `csvcommerce.image.get(size,filename)`)
 }
 
-
 // Depends on other modules
 func (m *ProductModule) Depends() []dingo.Module {
 	return []dingo.Module{
 		new(productSearchModule.Module),
+	}
+}
+
+// DefaultConfig enables inMemory cart service adapter
+func (m *ProductModule) DefaultConfig() config.Map {
+	return config.Map{
+		"flamingo-commerce-adapter-standalone": config.Map{
+			"csvCommerce": config.Map{
+				"productCsvPath": "ressources/products/products.csv",
+				"locale":         "en",
+				"currency":       "€",
+			},
+		},
 	}
 }

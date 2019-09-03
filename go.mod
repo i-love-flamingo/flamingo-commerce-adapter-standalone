@@ -1,9 +1,9 @@
 module flamingo.me/flamingo-commerce-adapter-standalone
 
 require (
-	flamingo.me/dingo v0.1.5
+	flamingo.me/dingo v0.1.6
 	flamingo.me/flamingo-commerce/v3 v3.0.0-beta.1
-	flamingo.me/flamingo/v3 v3.0.0-beta.2.0.20190515120627-9cabe248cf01
+	flamingo.me/flamingo/v3 v3.0.1
 	github.com/RoaringBitmap/roaring v0.4.19 // indirect
 	github.com/blevesearch/bleve v0.8.0
 	github.com/blevesearch/go-porterstemmer v1.0.2 // indirect
@@ -13,9 +13,9 @@ require (
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/etcd-io/bbolt v1.3.3 // indirect
 	github.com/steveyen/gtreap v0.0.0-20150807155958-0abe01ef9be2 // indirect
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.4.0
 	golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81 // indirect
-	google.golang.org/api v0.1.0
+	google.golang.org/api v0.3.1
 )
 
 replace flamingo.me/flamingo/v3 => ../flamingo
