@@ -16,3 +16,7 @@ unlocal:
 
 test:
 	go test -race -v ./...
+	gofmt -l -e -d .
+	golint ./...
+	misspell -error .
+	ineffassign .

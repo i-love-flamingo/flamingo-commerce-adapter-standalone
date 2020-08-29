@@ -1,0 +1,24 @@
+language: go
+
+go:
+  - 1.x
+
+install: true
+
+script:
+  - set -e
+  - fmt=$(gofmt -l .)
+  - test -z $fmt || (echo "please run gofmt" ; echo $fmt ; exit 1)
+  - go test -race -vet=all ./...
+
+jobs:
+  include:
+    - stage: testrecent
+      go: 1.x
+      script:
+        # test is done only for recent version.
+        # Older versions might include other files during compilation and may therefore generate different go.mod files
+        - go generate ./...
+        # Bug in swag results in Flaky swagger docs - see https://github.com/swaggo/swag/issues/721
+        #- git diff --quiet  || (echo 'generated go files are not up to date, check go generate, go.sum and go.mod' ; git diff ; exit 1)
+        - git diff --quiet -- . ":(exclude)docs" || (echo 'generated go files are not up to date, check go generate, go.sum and go.mod' ; git diff -- . ":(exclude)docs"; exit 1)
