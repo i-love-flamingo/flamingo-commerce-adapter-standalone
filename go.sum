@@ -27,6 +27,8 @@ flamingo.me/flamingo-commerce/v3 v3.0.0-beta.1 h1:GJ7OKKgWJx455dZJYCh/cHtdmIa+NE
 flamingo.me/flamingo-commerce/v3 v3.0.0-beta.1/go.mod h1:Dv0jLLTiSeFbhX7JNW2YXZ8kvelvGVzmGQ+zmr4qhHc=
 flamingo.me/flamingo-commerce/v3 v3.2.1-0.20200629110035-7265f9cb9c9f h1:+Z7OqKqivjvccitYaJg//d9SYsoj6GL2AF17nlwCVKg=
 flamingo.me/flamingo-commerce/v3 v3.2.1-0.20200629110035-7265f9cb9c9f/go.mod h1:B/UEppOc0/3zV1wgdsnvLh1PlEVNYMyA5yKAW+Gc2YQ=
+flamingo.me/flamingo-commerce/v3 v3.3.1-0.20200829191916-b2d851444347 h1:dvt8W6ZMg27CB7i4a7C3nN+WiDv9b55+zLmo0PcxsOs=
+flamingo.me/flamingo-commerce/v3 v3.3.1-0.20200829191916-b2d851444347/go.mod h1:BMlFWNTMucrs3z9bTEYY6azDbFnIb0ZDH9bVNi8bjkA=
 flamingo.me/flamingo/v3 v3.0.0-beta.1 h1:re3uxGtUWSwKpsFANXGOBX0qJoP2AA5V1yZ3Jb2ZbQ4=
 flamingo.me/flamingo/v3 v3.0.0-beta.1/go.mod h1:DUYtZWF8zGyACglnKKcqWsKtgUSUJFZoZh7NpBzQ9wQ=
 flamingo.me/flamingo/v3 v3.0.1/go.mod h1:qxq7rnO6bKIMgyx7WOoi3QcTy9UkX9jrAEGvFDnWFlc=
@@ -36,6 +38,7 @@ flamingo.me/flamingo/v3 v3.2.1-0.20200812074650-142034e9fe96/go.mod h1:demLn9ui2
 flamingo.me/flamingo/v3 v3.2.1-0.20200829173237-c992c361e4d1 h1:KOyOBwRjw3c+zcdoj6rkP6nyb2Bj+s64IPmbwD9stA8=
 flamingo.me/flamingo/v3 v3.2.1-0.20200829173237-c992c361e4d1/go.mod h1:demLn9ui2B45vrOfz+/aKohcJy/B56deyygcLBHjBzk=
 flamingo.me/form v1.0.0-alpha.1/go.mod h1:TliCSseukmM53A0RaEqDoIUY9AVRTbwUGsf5DH4WntY=
+flamingo.me/form v1.0.1 h1:mII37OSedlU4ruWdH234UF5ebG7j+WAz1SlX8o6QiPY=
 flamingo.me/form v1.0.1/go.mod h1:wvH0kq3mTrMmRVGuPT2HwvTScz4xTH11YUeWXCxlRMQ=
 flamingo.me/graphql v1.0.1/go.mod h1:JfIijC5pf1WqeSJjtTGljqNkG19n18EBZuC7uy0VoFc=
 flamingo.me/graphql v1.0.2-0.20200109090653-271ced2b302c/go.mod h1:JfIijC5pf1WqeSJjtTGljqNkG19n18EBZuC7uy0VoFc=
@@ -181,6 +184,7 @@ github.com/gin-gonic/gin v1.4.0/go.mod h1:OW2EZn3DO8Ln9oIKOvM++LBO+5UPHJJDH72/q/
 github.com/glycerine/go-unsnap-stream v0.0.0-20181221182339-f9677308dec2 h1:Ujru1hufTHVb++eG6OuNDKMxZnGIvF6o/u8q/8h2+I4=
 github.com/glycerine/go-unsnap-stream v0.0.0-20181221182339-f9677308dec2/go.mod h1:/20jfyN9Y5QPEAprSgKAUr+glWDY39ZiUEAYOEv5dsE=
 github.com/glycerine/goconvey v0.0.0-20180728074245-46e3a41ad493/go.mod h1:Ogl1Tioa0aV7gstGFO7KhffUsb9M4ydbEbbxpcEDc24=
+github.com/go-bindata/go-bindata v0.0.0-20190711162640-ee3c2418e368 h1:FRtLU+Y0bfJRflZITQXhiUI2uS+XelSbHqo+em6gpps=
 github.com/go-bindata/go-bindata v0.0.0-20190711162640-ee3c2418e368/go.mod h1:7xCgX1lzlrXPHkfvn3EhumqHkmSlzt8at9q7v0ax19c=
 github.com/go-bindata/go-bindata/v3 v3.1.4-0.20200620005137-771f8d80059e h1:lsrtUlq+yZ7fI7ss3w2wh57EEYFUi/tTFYImVHHJ4h8=
 github.com/go-bindata/go-bindata/v3 v3.1.4-0.20200620005137-771f8d80059e/go.mod h1:1/zrpXsLD8YDIbhZRqXzm1Ghc7NhEvIN9+Z6R5/xH4I=

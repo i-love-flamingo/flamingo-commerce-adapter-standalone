@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/i-love-flamingo/flamingo-commerce-adapter-standalone.svg?branch=master)](https://travis-ci.org/i-love-flamingo/flamingo-commerce-adapter-standalone?branch=master)
+
+
 # Flamingo Commerce Adapters Standalone 
 
 This repository contains modules that allow to run Flamingo Commerce n a standalone mode.
