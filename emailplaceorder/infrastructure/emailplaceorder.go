@@ -19,14 +19,14 @@ import (
 type (
 	// PlaceOrderServiceAdapter provides an implementation of the Service as email adapter
 	PlaceOrderServiceAdapter struct {
-		emailAddress    string
-		fromMail        string
-		fromName        string
-		websiteURL      string
-		logger          flamingo.Logger
-		sMTPCredentials Credentials
-		mailSender      MailSender
-		mailTemplate    MailTemplate
+		emailAddress string
+		fromMail     string
+		fromName     string
+		websiteURL   string
+		logger       flamingo.Logger
+		credentials  Credentials
+		mailSender   MailSender
+		mailTemplate MailTemplate
 	}
 
 	// Credentials defines the smtp credentials provided for the SendService
@@ -72,13 +72,13 @@ func (e *PlaceOrderServiceAdapter) Inject(logger flamingo.Logger, mailTemplate M
 		EmailAddress    string     `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.emailAddress"`
 		FromMail        string     `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.fromMail,optional"`
 		FromName        string     `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.fromName,optional"`
-		SMTPCredentials config.Map `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.Credentials"`
+		SMTPCredentials config.Map `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.credentials"`
 	}) {
 	e.mailTemplate = mailTemplate
 	e.mailSender = mailSender
 	e.logger = logger.WithField("module", "flamingo-commerce-adapter-standalone.emailplaceorder").WithField("category", "emailplaceorder")
 	if config != nil {
-		err := config.SMTPCredentials.MapInto(&e.sMTPCredentials)
+		err := config.SMTPCredentials.MapInto(&e.credentials)
 		if err != nil {
 			e.logger.Error(err)
 		}
@@ -181,7 +181,7 @@ func (e *PlaceOrderServiceAdapter) sendCustomerMail(cart *cartDomain.Cart, payme
 }
 
 func (e *PlaceOrderServiceAdapter) sendMail(to string, mail *Mail) error {
-	err := e.mailSender.Send(e.sMTPCredentials, to, e.fromMail, e.fromName, mail)
+	err := e.mailSender.Send(e.credentials, to, e.fromMail, e.fromName, mail)
 	if err != nil {
 		e.logger.Error(err)
 		return err

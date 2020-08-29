@@ -31,7 +31,7 @@ flamingoCommerceAdapterStandalone: {
 		emailAddress: string | *""
 		fromMail: string | *""
 		fromName: string | *""
-		Credentials: {
+		credentials: {
 			password: string | *""
 			server:   string | *""
 			port:     string | *""
