@@ -38,15 +38,24 @@ injector.Bind((*productSearchDomain.IndexUpdater)(nil)).To(YourLoaderImplementat
 With the setting
 `flamingo-commerce-adapter-standalone.commercesearch.repositoryAdapter` you can switch the repository implementation.
 
-The default is an simple in-memory product index, that works for single instances:
+The default is an simple in-memory product index, that works for single instances.
+
+## Bleve Repository
+
+You can also use the bleve based repository - bleve (http://blevesearch.com/) is a full text search and index for go.
 
 ```
-
 flamingo-commerce-adapter-standalone:
   commercesearch
     enableIndexing: true
     repositoryAdapter: bleve
-    bleveAdapter
-        //if products should also be attached to theire parent categories (default is true)
-        productsToParentCategories: true
+    bleveAdapter:
+      //if products should also be attached to theire parent categories (default is true)
+      productsToParentCategories: true
+      //enable hierarichal category facet (based on the indexed products)
+      enableCategoryFacet: true
+      // add facets for any additional attribute:
+      facetConfig:
+      - attributeCode: brandCode
+        amount: 10
 ```
