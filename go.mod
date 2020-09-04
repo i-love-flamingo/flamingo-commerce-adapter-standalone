@@ -2,7 +2,7 @@ module flamingo.me/flamingo-commerce-adapter-standalone
 
 require (
 	flamingo.me/dingo v0.2.9
-	flamingo.me/flamingo-commerce/v3 v3.3.1-0.20200829191916-b2d851444347
+	flamingo.me/flamingo-commerce/v3 v3.3.1-0.20200904150134-2ee09e6ec33b
 	flamingo.me/flamingo/v3 v3.2.1-0.20200829173237-c992c361e4d1
 	git.apache.org/thrift.git v0.12.0 // indirect
 	github.com/Masterminds/sprig v2.16.0+incompatible

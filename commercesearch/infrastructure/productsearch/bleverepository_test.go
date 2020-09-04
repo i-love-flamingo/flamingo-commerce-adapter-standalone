@@ -4,6 +4,7 @@ import (
 	"context"
 	commercePriceDomain "flamingo.me/flamingo-commerce/v3/price/domain"
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
+	"flamingo.me/flamingo/v3/framework/config"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"github.com/stretchr/testify/require"
 	"math/big"
@@ -194,6 +195,167 @@ func TestBleveProductRepository_AddProduct(t *testing.T) {
 
 	})
 
+}
+
+func TestBleveRepository_FacetsSearch(t *testing.T) {
+	s := &BleveRepository{}
+
+	configuration := config.Slice{}
+	configuration = append(configuration, config.Map{
+		"attributeCode": "brand",
+		"amount":        10,
+	})
+	s.Inject(flamingo.NullLogger{}, &struct {
+		AssignProductsToParentCategories bool         `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.productsToParentCategories,optional"`
+		EnableCategoryFacet              bool         `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.enableCategoryFacet,optional"`
+		FacetConfig                      config.Slice `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.facetConfig"`
+	}{
+		AssignProductsToParentCategories: true,
+		EnableCategoryFacet:              true,
+		FacetConfig:                      configuration,
+	})
+	err := s.PrepareIndex(context.Background())
+	assert.NoError(t, err)
+
+	product := domain.SimpleProduct{
+		Identifier: "id",
+
+		BasicProductData: domain.BasicProductData{
+			Title:           "atitle",
+			MarketPlaceCode: "id",
+			Attributes:      make(domain.Attributes),
+			Categories: []domain.CategoryTeaser{
+				domain.CategoryTeaser{
+					Code: "Sub3",
+					Parent: &domain.CategoryTeaser{
+						Code: "Root",
+					},
+				},
+			},
+			MainCategory: domain.CategoryTeaser{
+				Code: "Sub1",
+				Parent: &domain.CategoryTeaser{
+					Code: "Root",
+				},
+			},
+			CategoryToCodeMapping: nil,
+			StockLevel:            "",
+			Keywords:              nil,
+			IsNew:                 false,
+		},
+		Saleable: domain.Saleable{},
+	}
+	product.BasicProductData.Attributes["brand"] = domain.Attribute{
+		Code:      "brand",
+		CodeLabel: "Brand",
+		Label:     "apple",
+		RawValue:  nil,
+		UnitCode:  "",
+	}
+	product2 := domain.SimpleProduct{
+		Identifier: "id2",
+		BasicProductData: domain.BasicProductData{
+			MarketPlaceCode: "id2",
+			Title:           "btitle",
+			Attributes:      make(domain.Attributes),
+			MainCategory: domain.CategoryTeaser{
+				Code: "Sub2",
+				Path: "",
+				Name: "",
+				Parent: &domain.CategoryTeaser{
+					Code: "Root",
+				},
+			},
+		},
+		Saleable: domain.Saleable{},
+	}
+	product2.BasicProductData.Attributes["brand"] = domain.Attribute{
+		Code:      "brand",
+		CodeLabel: "Brand",
+		Label:     "apple",
+		RawValue:  nil,
+		UnitCode:  "",
+	}
+
+	product3 := domain.SimpleProduct{
+		Identifier: "id3",
+		BasicProductData: domain.BasicProductData{
+			MarketPlaceCode: "id3",
+			Title:           "green bag of something",
+			Attributes:      make(domain.Attributes),
+			MainCategory: domain.CategoryTeaser{
+				Code: "Sub2",
+				Parent: &domain.CategoryTeaser{
+					Code: "Root",
+				},
+			},
+			Categories: []domain.CategoryTeaser{
+				domain.CategoryTeaser{
+					Code: "Sub1_Sub2",
+					Parent: &domain.CategoryTeaser{
+						Code: "Sub2",
+						Parent: &domain.CategoryTeaser{
+							Code: "Root",
+						},
+					},
+				},
+			},
+		},
+		Saleable: domain.Saleable{},
+	}
+	product3.BasicProductData.Attributes["brand"] = domain.Attribute{
+		Code:      "brand",
+		CodeLabel: "Brand",
+		Label:     "flamingo",
+		RawValue:  nil,
+		UnitCode:  "",
+	}
+	err = s.UpdateProducts(context.Background(), []domain.BasicProduct{product, product2, product3})
+	assert.NoError(t, err)
+
+	//test pagination
+	t.Run("Test facets", func(t *testing.T) {
+
+		result, _ := s.Find(context.Background(),
+			searchDomain.NewQueryFilter("*"))
+
+		require.Equal(t, 3, len(result.Hits))
+		require.Greater(t, len(result.Facets), 1)
+
+		hasCatFacet := false
+		hasCatFacetSub2 := false
+		hasCatFacetSub1Sub2 := false
+		hasBrandFacet := false
+		hasBrandFacetApple := false
+		for facetKey, facet := range result.Facets {
+			if facetKey == "category" {
+				hasCatFacet = true
+				for _, facetItem := range facet.Items {
+					if facetItem.Value == "Sub2" {
+						hasCatFacetSub2 = true
+						for _, facetItemL2 := range facetItem.Items {
+							if facetItemL2.Value == "Sub1_Sub2" {
+								hasCatFacetSub1Sub2 = true
+							}
+						}
+					}
+				}
+			}
+			if facetKey == "brand" {
+				hasBrandFacet = true
+				for _, facetItem := range facet.Items {
+					if facetItem.Label == "apple" {
+						hasBrandFacetApple = true
+					}
+				}
+			}
+		}
+		assert.True(t, hasCatFacet)
+		assert.True(t, hasCatFacetSub2)
+		assert.True(t, hasCatFacetSub1Sub2)
+		assert.True(t, hasBrandFacet)
+		assert.True(t, hasBrandFacetApple)
+	})
 }
 
 func TestBleveRepository_CategorySearch(t *testing.T) {

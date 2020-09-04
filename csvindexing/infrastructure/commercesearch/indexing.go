@@ -175,9 +175,10 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 
 	for key, data := range row {
 		attributes[key] = domain.Attribute{
-			Code:     key,
-			Label:    key,
-			RawValue: data,
+			Code:      key,
+			CodeLabel: key,
+			Label:     data,
+			RawValue:  data,
 		}
 	}
 

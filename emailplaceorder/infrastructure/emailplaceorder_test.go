@@ -106,7 +106,7 @@ func initPlaceOrderAdapter() (infrastructure.PlaceOrderServiceAdapter, *mailSend
 			EmailAddress    string     `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.emailAddress"`
 			FromMail        string     `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.fromMail,optional"`
 			FromName        string     `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.fromName,optional"`
-			SMTPCredentials config.Map `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.Credentials"`
+			SMTPCredentials config.Map `inject:"config:flamingoCommerceAdapterStandalone.emailplaceorder.credentials"`
 		}{
 			EmailAddress:    "",
 			FromMail:        "",
