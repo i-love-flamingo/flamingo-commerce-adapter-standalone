@@ -2,11 +2,12 @@ package domain
 
 import (
 	"context"
+	"fmt"
+	"sync"
+
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 	product "flamingo.me/flamingo-commerce/v3/product/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
-	"fmt"
-	"sync"
 )
 
 type (
@@ -18,7 +19,7 @@ type (
 		enableIndexing bool
 	}
 
-	//Indexer provides useful features to work with the Repositories for indexing purposes
+	// Indexer provides useful features to work with the Repositories for indexing purposes
 	Indexer struct {
 		productRepository  ProductRepository
 		categoryRepository CategoryRepository
@@ -27,15 +28,15 @@ type (
 		batchCatQueue      []product.CategoryTeaser
 	}
 
-	//CategoryTreeBuilder helper to build category tree
+	// CategoryTreeBuilder helper to build category tree
 	CategoryTreeBuilder struct {
-		//rootCategory - this is the link into the tree that is going to be build
+		// rootCategory - this is the link into the tree that is going to be build
 		rootCategory *categoryDomain.TreeData
 
-		//categorTreeIndex - the link into the treenode - is build
-		categorTreeIndex map[string]*categoryDomain.TreeData
+		// categoryTreeIndex - the link into the treenode - is build
+		categoryTreeIndex map[string]*categoryDomain.TreeData
 
-		//child -> parent
+		// child -> parent
 		nodeLinkRawData map[string]string
 	}
 
@@ -45,7 +46,7 @@ type (
 		parent string
 	}
 
-	//IndexUpdater - interface to update the index with the help of the Indexer
+	// IndexUpdater - interface to update the index with the help of the Indexer
 	IndexUpdater interface {
 		Index(ctx context.Context, rep *Indexer) error
 	}
@@ -53,7 +54,7 @@ type (
 
 var mutex sync.Mutex
 
-//Inject for Indexer
+// Inject for Indexer
 func (i *Indexer) Inject(logger flamingo.Logger, productRepository ProductRepository,
 	config *struct {
 		CategoryRepository CategoryRepository `inject:",optional"`
@@ -65,7 +66,7 @@ func (i *Indexer) Inject(logger flamingo.Logger, productRepository ProductReposi
 	}
 }
 
-//PrepareIndex of the avaiable repository implementations
+// PrepareIndex of the avaiable repository implementations
 func (i *Indexer) PrepareIndex(ctx context.Context) error {
 	err := i.productRepository.PrepareIndex(ctx)
 	if err != nil {
@@ -77,7 +78,7 @@ func (i *Indexer) PrepareIndex(ctx context.Context) error {
 	return nil
 }
 
-//ProductRepository to get
+// ProductRepository to get
 func (i *Indexer) ProductRepository() ProductRepository {
 	return i.productRepository
 }
@@ -98,7 +99,7 @@ func (i *Indexer) commit(ctx context.Context) error {
 	return nil
 }
 
-//UpdateProductAndCategory helper to update product and the assigned categoryteasers
+// UpdateProductAndCategory helper to update product and the assigned categoryteasers
 func (i *Indexer) UpdateProductAndCategory(ctx context.Context, product product.BasicProduct) error {
 	i.batchProductQueue = append(i.batchProductQueue, product)
 
@@ -112,7 +113,7 @@ func (i *Indexer) UpdateProductAndCategory(ctx context.Context, product product.
 	return i.commit(ctx)
 }
 
-//Inject dependencies
+// Inject dependencies
 func (p *IndexProcess) Inject(indexUpdater IndexUpdater, logger flamingo.Logger, indexer *Indexer, config *struct {
 	EnableIndexing bool `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.enableIndexing,optional"`
 }) {
@@ -122,7 +123,7 @@ func (p *IndexProcess) Inject(indexUpdater IndexUpdater, logger flamingo.Logger,
 	p.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone").WithField(flamingo.LogKeyCategory, "indexer")
 }
 
-//Run the index process with registered loader (using indexer as helper for the repository access)
+// Run the index process with registered loader (using indexer as helper for the repository access)
 func (p *IndexProcess) Run(ctx context.Context) error {
 	if !p.enableIndexing {
 		p.logger.Info("Skipping Indexing..")
@@ -148,21 +149,21 @@ func (p *IndexProcess) Run(ctx context.Context) error {
 	return nil
 }
 
-//AddCategoryData to the builder.. Call this as often as you want to add before calling BuildTree
+// AddCategoryData to the builder.. Call this as often as you want to add before calling BuildTree
 func (h *CategoryTreeBuilder) AddCategoryData(code string, name string, parentCode string) {
-	if h.categorTreeIndex == nil {
-		h.categorTreeIndex = make(map[string]*categoryDomain.TreeData)
+	if h.categoryTreeIndex == nil {
+		h.categoryTreeIndex = make(map[string]*categoryDomain.TreeData)
 	}
 	if h.rootCategory == nil {
 		h.rootCategory = &categoryDomain.TreeData{}
 	}
-	//root category is either a default empty node or detected by code == parentCode
+	// root category is either a default empty node or detected by code == parentCode
 	if code == parentCode {
 		h.rootCategory = &categoryDomain.TreeData{
 			CategoryCode: code,
 			CategoryName: name,
 		}
-		h.categorTreeIndex[code] = h.rootCategory
+		h.categoryTreeIndex[code] = h.rootCategory
 		return
 	}
 
@@ -173,15 +174,15 @@ func (h *CategoryTreeBuilder) AddCategoryData(code string, name string, parentCo
 		CategoryCode: code,
 		CategoryName: name,
 	}
-	h.categorTreeIndex[code] = &buildedBasicNode
+	h.categoryTreeIndex[code] = &buildedBasicNode
 	h.nodeLinkRawData[code] = parentCode
 }
 
-//BuildTree build Tree based on added categoriedata
+// BuildTree build Tree based on added categoriedata
 func (h *CategoryTreeBuilder) BuildTree() (*categoryDomain.TreeData, error) {
-	//Build the tree links
+	// Build the tree links
 	for childCode, parentCode := range h.nodeLinkRawData {
-		childNode, ok := h.categorTreeIndex[childCode]
+		childNode, ok := h.categoryTreeIndex[childCode]
 		if !ok {
 			return nil, fmt.Errorf("ChildNode %v not found", childNode)
 		}
@@ -189,7 +190,7 @@ func (h *CategoryTreeBuilder) BuildTree() (*categoryDomain.TreeData, error) {
 		if parentCode == "" {
 			parentNode = h.rootCategory
 		} else {
-			parentNode, ok = h.categorTreeIndex[parentCode]
+			parentNode, ok = h.categoryTreeIndex[parentCode]
 			if !ok {
 				return nil, fmt.Errorf("ParentCode %v not found", parentCode)
 			}
@@ -201,14 +202,14 @@ func (h *CategoryTreeBuilder) BuildTree() (*categoryDomain.TreeData, error) {
 }
 
 func buildPathString(parent *categoryDomain.TreeData) {
-	//Build the Path
+	// Build the Path
 	for _, subNode := range parent.SubTreesData {
 		subNode.CategoryPath = parent.CategoryPath + "/" + subNode.CategoryCode
 		buildPathString(subNode)
 	}
 }
 
-//CategoryTreeToCategoryTeaser conversion
+// CategoryTreeToCategoryTeaser conversion
 func CategoryTreeToCategoryTeaser(searchedCategoryCode string, tree categoryDomain.Tree) *product.CategoryTeaser {
 	return categoryTreeToCategoryTeaser(searchedCategoryCode, tree, nil)
 }
@@ -220,7 +221,7 @@ func categoryTreeToCategoryTeaser(searchedCategoryCode string, searchPosition ca
 		Name:   searchPosition.Name(),
 		Parent: parentCategory,
 	}
-	//recursion stops of category found
+	// recursion stops of category found
 	if searchPosition.Code() == searchedCategoryCode {
 		return teaserForCurrentNode
 	}

@@ -180,6 +180,17 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 	attributes := make(map[string]domain.Attribute)
 
 	for key, data := range row {
+
+		// skip other locales
+		parts := strings.Split(key, "-")
+		if len(parts) > 1 {
+			l := parts[len(parts)-1]
+			if l != "" && l != locale {
+				continue
+			}
+		}
+
+		key = strings.TrimSuffix(key, "-"+locale)
 		attributes[key] = domain.Attribute{
 			Code:      key,
 			CodeLabel: key,
