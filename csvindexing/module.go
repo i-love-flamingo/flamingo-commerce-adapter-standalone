@@ -43,7 +43,7 @@ func (r *routes) Inject(controller *controller.ImageController) {
 
 func (r *routes) Routes(registry *web.RouterRegistry) {
 	registry.HandleGet("csvcommerce.image.get", r.controller.Get)
-	registry.Route("/image/:size/:filename", `csvcommerce.image.get(size,filename)`)
+	registry.MustRoute("/image/:size/:filename", `csvcommerce.image.get(size,filename)`)
 }
 
 // Depends on other modules
@@ -58,8 +58,18 @@ func (m *ProductModule) CueConfig() string {
 	return `
 flamingoCommerceAdapterStandalone: {
 	csvindexing: {
-		productCsvPath: string | *"ressources/products/products.csv"
-		categoryCsvPath: string | *""
+		file :: {
+			path: string
+			delimiter: string | *","
+		}
+		files: {
+			product:  file & {
+				path: "resources/products/products.csv"
+			}
+			category: file & {
+				path: "resources/categories/categories.csv"
+			}
+		}
 		locale: string | *"en"
 		currency: string | *"€"
 		allowedImageResizeParamaters: string | *"200x,300x,400x,x200,x300"

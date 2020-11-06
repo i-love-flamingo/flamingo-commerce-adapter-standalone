@@ -21,7 +21,7 @@ type (
 	ImageController struct {
 		Responder               *web.Responder  `inject:""`
 		Logger                  flamingo.Logger `inject:""`
-		ProductCsvPath          string          `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.productCsvPath"`
+		ProductCsvPath          string          `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.files.products.path"`
 		AllowedResizeParamaters string          `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.allowedImageResizeParamaters"`
 	}
 )

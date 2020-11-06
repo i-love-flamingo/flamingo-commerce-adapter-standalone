@@ -3,31 +3,30 @@ package commercesearch
 import (
 	"context"
 	"errors"
-	commerceSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
-	categorydomain "flamingo.me/flamingo-commerce/v3/category/domain"
-
 	"fmt"
+	"strconv"
 	"strings"
 
+	categorydomain "flamingo.me/flamingo-commerce/v3/category/domain"
 	priceDomain "flamingo.me/flamingo-commerce/v3/price/domain"
-
-	"strconv"
-
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvindexing/infrastructure/csv"
-
 	"flamingo.me/flamingo-commerce/v3/product/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
+
+	commerceSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvindexing/infrastructure/csv"
 )
 
 type (
 	// IndexUpdater implements indexing based on CSV file
 	IndexUpdater struct {
-		logger              flamingo.Logger
-		productCsvFile      string
-		categoryCsvFile     string
-		categoryTreeBuilder *commerceSearchDomain.CategoryTreeBuilder
-		locale              string
-		currency            string
+		logger               flamingo.Logger
+		productCsvFile       string
+		productCsvDelimiter  rune
+		categoryCsvFile      string
+		categoryCsvDelimiter rune
+		categoryTreeBuilder  *commerceSearchDomain.CategoryTreeBuilder
+		locale               string
+		currency             string
 	}
 )
 
@@ -38,23 +37,30 @@ var (
 // Inject method to inject dependencies
 func (f *IndexUpdater) Inject(logger flamingo.Logger, categoryTreeBuilder *commerceSearchDomain.CategoryTreeBuilder,
 	config *struct {
-		ProductCsvFile  string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.productCsvPath"`
-		CategoryCsvFile string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categoryCsvPath, optional"`
-		Locale          string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
-		Currency        string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
+		ProductCsvFile       string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.files.products.path"`
+		ProductCsvDelimiter  string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.files.products.delimiter"`
+		CategoryCsvFile      string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.files.categories.path,optional"`
+		CategoryCsvDelimiter string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.files.categories.delimiter,optional"`
+		Locale               string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
+		Currency             string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
 	}) {
 	f.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone.csvindexing").WithField(flamingo.LogKeyCategory, "IndexUpdater")
-	if config == nil {
-		return
-	}
-	f.productCsvFile = config.ProductCsvFile
-	f.categoryCsvFile = config.CategoryCsvFile
-	f.locale = config.Locale
-	f.currency = config.Currency
 	f.categoryTreeBuilder = categoryTreeBuilder
+	if config != nil {
+		f.productCsvFile = config.ProductCsvFile
+		if config.ProductCsvDelimiter != "" {
+			f.productCsvDelimiter = []rune(config.ProductCsvDelimiter)[0]
+		}
+		f.categoryCsvFile = config.CategoryCsvFile
+		if config.CategoryCsvDelimiter != "" {
+			f.categoryCsvDelimiter = []rune(config.CategoryCsvDelimiter)[0]
+		}
+		f.locale = config.Locale
+		f.currency = config.Currency
+	}
 }
 
-//Index starts index process
+// Index starts index process
 func (f *IndexUpdater) Index(ctx context.Context, indexer *commerceSearchDomain.Indexer) error {
 	f.logger.Info(fmt.Sprintf("Start loading CSV file: %v  with locale: %v and currency %v", f.productCsvFile, f.locale, f.currency))
 
@@ -62,7 +68,7 @@ func (f *IndexUpdater) Index(ctx context.Context, indexer *commerceSearchDomain.
 	var tree categorydomain.Tree
 	// read category tree
 	if f.categoryCsvFile != "" {
-		catrows, err := csv.ReadCSV(f.categoryCsvFile)
+		catrows, err := csv.ReadCSV(f.categoryCsvFile, csv.DelimiterOption(f.productCsvDelimiter))
 		if err != nil {
 			return errors.New(err.Error() + " / File: " + f.categoryCsvFile)
 		}
@@ -70,15 +76,15 @@ func (f *IndexUpdater) Index(ctx context.Context, indexer *commerceSearchDomain.
 			f.categoryTreeBuilder.AddCategoryData(row["code"], row["label-"+f.locale], row["parent"])
 		}
 		tree, err = f.categoryTreeBuilder.BuildTree()
-		//fmt.Printf("\n %#v",tree)
-		//printTree(tree,"")
+		// fmt.Printf("\n %#v",tree)
+		// printTree(tree,"")
 		if err != nil {
 			return err
 		}
 	}
 
-	//Index products
-	rows, err := csv.ReadCSV(f.productCsvFile)
+	// Index products
+	rows, err := csv.ReadCSV(f.productCsvFile, csv.DelimiterOption(f.categoryCsvDelimiter))
 	if err != nil {
 		return errors.New(err.Error() + " / File: " + f.productCsvFile)
 	}
