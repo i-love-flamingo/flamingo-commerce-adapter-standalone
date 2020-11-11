@@ -62,14 +62,20 @@ flamingoCommerceAdapterStandalone: {
 			path: string
 			delimiter: string | *","
 		}
-		files: {
-			product:  file & {
+
+		product: {
+			file: file & {
 				path: "resources/products/products.csv"
 			}
-			category: file & {
+			attributesToSplit: [...string]
+		}
+
+		category: {
+			file: file & {
 				path: "resources/categories/categories.csv"
 			}
 		}
+		
 		locale: string | *"en"
 		currency: string | *"€"
 		allowedImageResizeParamaters: string | *"200x,300x,400x,x200,x300"

@@ -10,6 +10,7 @@ import (
 	categorydomain "flamingo.me/flamingo-commerce/v3/category/domain"
 	priceDomain "flamingo.me/flamingo-commerce/v3/price/domain"
 	"flamingo.me/flamingo-commerce/v3/product/domain"
+	"flamingo.me/flamingo/v3/framework/config"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 
 	commerceSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
@@ -19,14 +20,15 @@ import (
 type (
 	// IndexUpdater implements indexing based on CSV file
 	IndexUpdater struct {
-		logger               flamingo.Logger
-		productCsvFile       string
-		productCsvDelimiter  rune
-		categoryCsvFile      string
-		categoryCsvDelimiter rune
-		categoryTreeBuilder  *commerceSearchDomain.CategoryTreeBuilder
-		locale               string
-		currency             string
+		logger                   flamingo.Logger
+		productCsvFile           string
+		productCsvDelimiter      rune
+		productAttributesToSplit map[string]struct{}
+		categoryCsvFile          string
+		categoryCsvDelimiter     rune
+		categoryTreeBuilder      *commerceSearchDomain.CategoryTreeBuilder
+		locale                   string
+		currency                 string
 	}
 )
 
@@ -37,12 +39,13 @@ var (
 // Inject method to inject dependencies
 func (f *IndexUpdater) Inject(logger flamingo.Logger, categoryTreeBuilder *commerceSearchDomain.CategoryTreeBuilder,
 	config *struct {
-		ProductCsvFile       string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.files.products.path"`
-		ProductCsvDelimiter  string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.files.products.delimiter"`
-		CategoryCsvFile      string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.files.categories.path,optional"`
-		CategoryCsvDelimiter string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.files.categories.delimiter,optional"`
-		Locale               string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
-		Currency             string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
+		ProductCsvFile           string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.path"`
+		ProductCsvDelimiter      string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.delimiter"`
+		ProductAttributesToSplit config.Slice `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.attributesToSplit"`
+		CategoryCsvFile          string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categories.file.path,optional"`
+		CategoryCsvDelimiter     string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categories.file.delimiter,optional"`
+		Locale                   string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
+		Currency                 string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
 	}) {
 	f.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone.csvindexing").WithField(flamingo.LogKeyCategory, "IndexUpdater")
 	f.categoryTreeBuilder = categoryTreeBuilder
@@ -55,6 +58,18 @@ func (f *IndexUpdater) Inject(logger flamingo.Logger, categoryTreeBuilder *comme
 		if config.CategoryCsvDelimiter != "" {
 			f.categoryCsvDelimiter = []rune(config.CategoryCsvDelimiter)[0]
 		}
+
+		var toSplit []string
+		err := config.ProductAttributesToSplit.MapInto(&toSplit)
+		if err != nil {
+			panic(err)
+		}
+
+		f.productAttributesToSplit = make(map[string]struct{})
+		for _, attribute := range toSplit {
+			f.productAttributesToSplit[attribute] = struct{}{}
+		}
+
 		f.locale = config.Locale
 		f.currency = config.Currency
 	}
@@ -191,11 +206,22 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 		}
 
 		key = strings.TrimSuffix(key, "-"+locale)
+
 		attributes[key] = domain.Attribute{
 			Code:      key,
 			CodeLabel: key,
 			Label:     data,
-			RawValue:  data,
+			RawValue: func() interface{} {
+				if _, found := f.productAttributesToSplit[key]; !found {
+					return data
+				}
+
+				var split []interface{}
+				for _, s := range strings.Split(data, ",") {
+					split = append(split, s)
+				}
+				return split
+			}(),
 		}
 	}
 
@@ -264,6 +290,7 @@ func (f *IndexUpdater) buildSimpleProduct(row map[string]string, locale string, 
 		ShortDescription: simple.BasicProductData.ShortDescription,
 		ShortTitle:       simple.BasicProductData.Title,
 		MarketPlaceCode:  simple.BasicProductData.MarketPlaceCode,
+		Media:            simple.BaseData().Media,
 	}
 
 	return &simple, nil
