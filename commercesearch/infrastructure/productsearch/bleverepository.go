@@ -5,13 +5,17 @@ import (
 	"context"
 	"encoding/gob"
 	"errors"
+	"fmt"
+	"math"
+	"strings"
+	"sync"
+
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 	productDomain "flamingo.me/flamingo-commerce/v3/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 	"flamingo.me/flamingo/v3/framework/config"
 	"flamingo.me/flamingo/v3/framework/flamingo"
-	"fmt"
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/analysis"
 	"github.com/blevesearch/bleve/analysis/tokenizer/whitespace"
@@ -19,9 +23,6 @@ import (
 	"github.com/blevesearch/bleve/mapping"
 	"github.com/blevesearch/bleve/search"
 	"github.com/blevesearch/bleve/search/query"
-	"math"
-	"strings"
-	"sync"
 )
 
 type (
@@ -36,11 +37,18 @@ type (
 		cachedCategories                 map[string]categoryDomain.Category
 		enableCategoryFacet              bool
 		facetConfig                      []facetConfig
+		sortConfig                       []sortConfig
 	}
 
 	facetConfig struct {
 		AttributeCode string
 		Amount        int
+	}
+
+	sortConfig struct {
+		AttributeCode string
+		Asc           bool
+		Desc          bool
 	}
 
 	//bleveDocument - envelop for indexed entities
@@ -89,14 +97,25 @@ func (r *BleveRepository) Inject(logger flamingo.Logger, config *struct {
 	AssignProductsToParentCategories bool         `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.productsToParentCategories,optional"`
 	EnableCategoryFacet              bool         `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.enableCategoryFacet,optional"`
 	FacetConfig                      config.Slice `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.facetConfig"`
+	SortConfig                       config.Slice `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.sortConfig"`
 }) *BleveRepository {
 	r.logger = logger.WithField(flamingo.LogKeyModule, "flamingoCommerceAdapterStandalone.commercesearch").WithField(flamingo.LogKeyCategory, "bleve")
 	if config != nil {
 		r.assignProductsToParentCategories = config.AssignProductsToParentCategories
 		r.enableCategoryFacet = config.EnableCategoryFacet
 		var facetConfig []facetConfig
-		config.FacetConfig.MapInto(&facetConfig)
+		err := config.FacetConfig.MapInto(&facetConfig)
+		if err != nil {
+			panic(err)
+		}
 		r.facetConfig = facetConfig
+
+		var sortConfig []sortConfig
+		err = config.SortConfig.MapInto(&sortConfig)
+		if err != nil {
+			panic(err)
+		}
+		r.sortConfig = sortConfig
 	}
 	return r
 }
@@ -536,7 +555,7 @@ func (r *BleveRepository) Find(_ context.Context, filters ...searchDomain.Filter
 		return bleve.NewPhraseQuery([]string{code}, fieldPrefixInIndexedDocument+"Facet.Categorycode")
 	}
 	for _, filter := range filters {
-		r.logger.Warn("Find", fmt.Sprintf("%T %#v", filter, filter))
+		r.logger.Info("Find ", fmt.Sprintf("%T %#v", filter, filter))
 		switch f := filter.(type) {
 		case *searchDomain.KeyValueFilter:
 			if f.Key() == "category" {
@@ -673,14 +692,36 @@ func (r *BleveRepository) mapBleveResultToResult(searchResults *bleve.SearchResu
 		productResults = append(productResults, product)
 	}
 
+	var sortOptions []searchDomain.SortOption
+
+	for _, s := range r.sortConfig {
+		sortOptions = append(sortOptions, searchDomain.SortOption{
+			Label: s.AttributeCode,
+			Field: s.AttributeCode,
+			Asc: func() string {
+				if s.Asc {
+					return s.AttributeCode
+				}
+				return ""
+			}(),
+			Desc: func() string {
+				if s.Desc {
+					return s.AttributeCode
+				}
+				return ""
+			}(),
+		})
+	}
+
 	return &productDomain.SearchResult{
 		Hits: productResults,
 		Result: searchDomain.Result{
 			Facets: resultFacetCollection,
 			SearchMeta: searchDomain.SearchMeta{
-				NumResults: int(searchResults.Total),
-				NumPages:   pageAmount,
-				Page:       currentPage,
+				NumResults:  int(searchResults.Total),
+				NumPages:    pageAmount,
+				Page:        currentPage,
+				SortOptions: sortOptions,
 			}},
 	}
 }

@@ -139,6 +139,7 @@ flamingoCommerceAdapterStandalone: {
 			productsToParentCategories: bool | *true
 			enableCategoryFacet: bool | *false
 			facetConfig: [...{attributeCode: string, amount: number}]
+			sortConfig:[...{attributeCode: string, asc: bool, desc: bool}]
 		}
 	}
 }`
