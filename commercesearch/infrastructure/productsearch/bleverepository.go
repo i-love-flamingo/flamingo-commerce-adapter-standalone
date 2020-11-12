@@ -634,7 +634,26 @@ func (r *BleveRepository) Find(_ context.Context, filters ...searchDomain.Filter
 		return nil, err
 	}
 
-	return r.mapBleveResultToResult(searchResults), nil
+	result := r.mapBleveResultToResult(searchResults)
+	markActiveFacets(filters, result)
+
+	return result, nil
+}
+
+func markActiveFacets(filters []searchDomain.Filter, result *productDomain.SearchResult) {
+	for _, filter := range filters {
+		if f, ok := filter.(*searchDomain.KeyValueFilter); ok {
+			for i, facetItem := range result.Facets[f.Key()].Items {
+				for _, selectedValue := range f.KeyValues() {
+					if facetItem.Value == selectedValue {
+						facetItem.Selected = true
+						facetItem.Active = true
+					}
+				}
+				result.Facets[f.Key()].Items[i] = facetItem
+			}
+		}
+	}
 }
 
 func (r *BleveRepository) mapBleveResultToResult(searchResults *bleve.SearchResult) *productDomain.SearchResult {
@@ -683,6 +702,7 @@ func (r *BleveRepository) mapBleveResultToResult(searchResults *bleve.SearchResu
 		}
 		resultFacetCollection["category"] = facet
 	}
+
 	for _, facetConfig := range r.facetConfig {
 		facetResult := facetResultForConfiguredName(facetConfig.AttributeCode)
 		if facetResult == nil {
