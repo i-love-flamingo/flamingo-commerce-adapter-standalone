@@ -2,18 +2,21 @@ package commercesearch
 
 import (
 	"context"
+
 	"flamingo.me/dingo"
-	productSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/category"
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/search"
 	"flamingo.me/flamingo-commerce/v3/category/domain"
 	domain2 "flamingo.me/flamingo-commerce/v3/search/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"flamingo.me/flamingo/v3/framework/web"
 
+	productSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/category"
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/search"
+
+	productdomain "flamingo.me/flamingo-commerce/v3/product/domain"
+
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/product"
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/productsearch"
-	productdomain "flamingo.me/flamingo-commerce/v3/product/domain"
 )
 
 type (
@@ -134,6 +137,8 @@ flamingoCommerceAdapterStandalone: {
 		repositoryAdapter: "bleve" | *"inmemory"
 		bleveAdapter: {
 			productsToParentCategories: bool | *true
+			enableCategoryFacet: bool | *false
+			facetConfig: [...{attributeCode: string, amount: number}]
 		}
 	}
 }`
