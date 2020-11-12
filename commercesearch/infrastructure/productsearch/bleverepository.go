@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -48,6 +49,7 @@ type (
 
 	sortConfig struct {
 		AttributeCode string
+		AttributeType string
 		Asc           bool
 		Desc          bool
 	}
@@ -59,15 +61,17 @@ type (
 	}
 )
 
-const productType = "product"
-const categoryType = "category"
-const categoryIDPrefix = "cat_"
-
-const sourceFieldName = "_source"
-
-const typeFieldName = "_type"
-
-const fieldPrefixInIndexedDocument = "Product."
+const (
+	attributeTypeNumeric         = "numeric"
+	attributeTypeText            = "text"
+	attributeTypeBool            = "bool"
+	productType                  = "product"
+	categoryType                 = "category"
+	categoryIDPrefix             = "cat_"
+	sourceFieldName              = "_source"
+	typeFieldName                = "_type"
+	fieldPrefixInIndexedDocument = "Product."
+)
 
 var (
 	_ domain.ProductRepository  = &BleveRepository{}
@@ -258,18 +262,30 @@ func (r *BleveRepository) productToBleveDocs(product productDomain.BasicProduct)
 		sourceFieldName, nil, productEncoded, document.StoreField)
 	bleveProductDocument = bleveProductDocument.AddField(field)
 
+	for _, sort := range r.sortConfig {
+		var field document.Field
+		switch sort.AttributeType {
+		case attributeTypeNumeric:
+			val, _ := strconv.ParseFloat(product.BaseData().Attribute(sort.AttributeCode).Value(), 64)
+			field = document.NewNumericField(
+				fieldPrefixInIndexedDocument+"sort."+sort.AttributeCode, nil, val)
+		case attributeTypeText:
+			field = document.NewTextFieldCustom(
+				fieldPrefixInIndexedDocument+"sort."+sort.AttributeCode, nil, []byte(product.BaseData().Attribute(sort.AttributeCode).Value()), document.IndexField, nil)
+		case attributeTypeBool:
+			val, _ := strconv.ParseBool(product.BaseData().Attribute(sort.AttributeCode).Value())
+			field = document.NewBooleanField(
+				fieldPrefixInIndexedDocument+"sort."+sort.AttributeCode, nil, val)
+		}
+		bleveProductDocument = bleveProductDocument.AddField(field)
+	}
+
 	// Add price Field to support sorting by price
 	priceField := document.NewNumericField(
-		fieldPrefixInIndexedDocument+"Sort.Price", nil, product.TeaserData().TeaserPrice.GetFinalPrice().FloatAmount())
+		fieldPrefixInIndexedDocument+"sort.price", nil, product.TeaserData().TeaserPrice.GetFinalPrice().FloatAmount())
 	bleveProductDocument = bleveProductDocument.AddField(priceField)
 
-	// Add title Field to support sorting by raw title (without analysers)
-	titleSortField := document.NewTextFieldCustom(
-		fieldPrefixInIndexedDocument+"Sort.Title", nil, []byte(product.BaseData().Title),
-		document.IndexField, nil)
-	bleveProductDocument = bleveProductDocument.AddField(titleSortField)
-
-	// Add category field for category facet and filter
+	//  Add category field for category facet and filter
 	tok, err := whitespace.TokenizerConstructor(nil, nil)
 	if err != nil {
 		return nil, err
@@ -576,7 +592,7 @@ func (r *BleveRepository) Find(_ context.Context, filters ...searchDomain.Filter
 		case *searchDomain.PaginationPageSize:
 			pageSize = f.GetPageSize()
 		case *searchDomain.SortFilter:
-			sortingField = fieldPrefixInIndexedDocument + "Sort." + f.Field()
+			sortingField = fieldPrefixInIndexedDocument + "sort." + f.Field()
 			sortingDesc = f.Descending()
 		}
 	}
@@ -698,7 +714,16 @@ func (r *BleveRepository) mapBleveResultToResult(searchResults *bleve.SearchResu
 		productResults = append(productResults, product)
 	}
 
-	var sortOptions []searchDomain.SortOption
+	sortOptions := []searchDomain.SortOption{
+		{
+			Label:        "Price",
+			Field:        "price",
+			SelectedAsc:  false,
+			SelectedDesc: false,
+			Asc:          "price",
+			Desc:         "price",
+		},
+	}
 
 	for _, s := range r.sortConfig {
 		sortOptions = append(sortOptions, searchDomain.SortOption{

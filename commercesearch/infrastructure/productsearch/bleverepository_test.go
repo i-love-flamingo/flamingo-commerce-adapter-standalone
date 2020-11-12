@@ -2,14 +2,15 @@ package productsearch
 
 import (
 	"context"
+	"math/big"
+	"testing"
+	"time"
+
 	commercePriceDomain "flamingo.me/flamingo-commerce/v3/price/domain"
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 	"flamingo.me/flamingo/v3/framework/config"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"testing"
-	"time"
 
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 	"flamingo.me/flamingo-commerce/v3/product/domain"
@@ -209,6 +210,7 @@ func TestBleveRepository_FacetsSearch(t *testing.T) {
 		AssignProductsToParentCategories bool         `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.productsToParentCategories,optional"`
 		EnableCategoryFacet              bool         `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.enableCategoryFacet,optional"`
 		FacetConfig                      config.Slice `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.facetConfig"`
+		SortConfig                       config.Slice `inject:"config:flamingoCommerceAdapterStandalone.commercesearch.bleveAdapter.sortConfig"`
 	}{
 		AssignProductsToParentCategories: true,
 		EnableCategoryFacet:              true,
