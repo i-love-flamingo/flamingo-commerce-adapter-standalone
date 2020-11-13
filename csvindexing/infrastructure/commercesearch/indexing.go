@@ -238,6 +238,14 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 		}
 	}
 
+	stockLevel := domain.StockLevelInStock
+	switch row["stockLevel"] {
+	case domain.StockLevelInStock,
+		domain.StockLevelLowStock,
+		domain.StockLevelOutOfStock:
+		stockLevel = row["stockLevel"]
+	}
+
 	basicProductData := domain.BasicProductData{
 		MarketPlaceCode:  row["marketplaceCode"],
 		RetailerCode:     row["retailerCode"],
@@ -249,7 +257,7 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 		Media:            f.getMedia(row, locale),
 		Keywords:         strings.Split("metaKeywords-"+locale, ","),
 		Attributes:       attributes,
-		StockLevel:       domain.StockLevelInStock, // todo: use row
+		StockLevel:       stockLevel,
 	}
 	if len(categories) > 0 {
 		basicProductData.MainCategory = categories[0]
