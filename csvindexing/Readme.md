@@ -52,19 +52,24 @@ Price fields need to be postfixed with currency name. Asset and Images paths nee
 
 Mandatory fields:
 
-* marketplaceCode (the unique idendifier of the product)
+* marketplaceCode (the unique identifier of the product)
+* retailerCode (reference to the retailer)
 * title-LOCALE (the title)
+* metaKeywords-LOCALE (comma separated keywords)
 * productType ("simple" or "configurable")
 * price-CURRENCY
+* shortDescription-LOCALE
+* saleable (1/0 if product is saleable true/false)
 
 Optional:
-
-* specialPrice-CURRENCY
-* categories (comma separated references to categories. Using the category code as idendifier)
+* saleableFromDate (from when should the product be saleable, date string in RFC3339 format)
+* saleableToDate (till when should the product be saleable, RFC3339)
+* specialPrice-CURRENCY (promotional price)
+* retailerName  
+* categories (comma separated references to categories. Using the category code as identifier)
 * retailerCode (reference to the retailer / vendor of the product)
-* shortDescription-LOCALE
+* stockLevel (define stock level of product: in, out, low)  
 * description-LOCALE
-* metaKeywords-LOCALE (comma separated keywords)
 * listImage
 * thumbnailImage
 * detailImage01,detailImage02 ... detailImage10
