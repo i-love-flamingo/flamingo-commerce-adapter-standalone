@@ -2,14 +2,16 @@ package category
 
 import (
 	"context"
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
+
 	"flamingo.me/flamingo/v3/framework/flamingo"
+
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
 
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 )
 
 type (
-	//Adapter - Adapter that uses a category csv (WIP)
+	// Adapter that uses the category repository
 	Adapter struct {
 		categoryRepository domain.CategoryRepository
 		logger             flamingo.Logger
@@ -20,7 +22,7 @@ var (
 	_ categoryDomain.CategoryService = &Adapter{}
 )
 
-//Inject - dingo injector
+// Inject dependencies
 func (a *Adapter) Inject(categoryRepository domain.CategoryRepository, logger flamingo.Logger) {
 	a.categoryRepository = categoryRepository
 	a.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone.commercesearch").WithField(flamingo.LogKeyCategory, "categoryadapter")

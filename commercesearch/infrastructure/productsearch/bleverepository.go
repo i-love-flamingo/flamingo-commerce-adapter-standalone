@@ -54,7 +54,7 @@ type (
 		Desc          bool
 	}
 
-	// bleveDocument - envelop for indexed entities
+	// bleveDocument envelop for indexed entities
 	bleveDocument struct {
 		Product  productDomain.BasicProduct
 		Category *productDomain.CategoryTeaser
@@ -125,7 +125,7 @@ func (r *BleveRepository) Inject(logger flamingo.Logger, config *struct {
 	return r
 }
 
-// PrepareIndex - prepares bleve index with given configuration
+// PrepareIndex prepares bleve index with given configuration
 func (r *BleveRepository) PrepareIndex(_ context.Context) error {
 
 	// Init index
@@ -137,13 +137,6 @@ func (r *BleveRepository) PrepareIndex(_ context.Context) error {
 	categoryCodeField.DocValues = false
 	categoryCodeField.Store = false
 	categoryCodeField.Index = false
-	/*
-		productMapping := bleve.NewDocumentMapping()
-		productMapping.AddFieldMappingsAt(fieldPrefixInIndexedDocument+"MMMainCategory.Code",categoryCodeField)
-		mapping.AddDocumentMapping(productType, productMapping)
-		mapping.DefaultMapping.AddFieldMappingsAt(fieldPrefixInIndexedDocument+"MMMainCategory.Code",categoryCodeField)
-		mapping.AddDocumentMapping(productType, productMapping)
-	*/
 
 	/* todo - enable persistent index ?
 	indexName := "productRepIndex"
@@ -162,13 +155,13 @@ func (r *BleveRepository) PrepareIndex(_ context.Context) error {
 
 func (r *BleveRepository) getIndex() (bleve.Index, error) {
 	if r.index == nil {
-		return nil, errors.New("Index not prepared")
+		return nil, errors.New("index not prepared")
 	}
 	return r.index, nil
 
 }
 
-// UpdateByCategoryTeasers - updates or appends a category to the Product Repository
+// UpdateByCategoryTeasers updates or appends a category to the Product Repository
 func (r *BleveRepository) UpdateByCategoryTeasers(_ context.Context, categoryTeasers []productDomain.CategoryTeaser) error {
 	index, err := r.getIndex()
 	if err != nil {
@@ -203,7 +196,7 @@ func (r *BleveRepository) ClearProducts(_ context.Context, products []string) er
 	return nil
 }
 
-// UpdateProducts  products to the Product Repository
+// UpdateProducts products to the Product Repository
 func (r *BleveRepository) UpdateProducts(_ context.Context, products []productDomain.BasicProduct) error {
 	index, err := r.getIndex()
 	if err != nil {
@@ -238,7 +231,7 @@ func (r *BleveRepository) UpdateProducts(_ context.Context, products []productDo
 	return nil
 }
 
-// productToBleveDocs - returns the Product and Category documents to be indexed
+// productToBleveDocs returns the Product and Category documents to be indexed
 func (r *BleveRepository) productToBleveDocs(product productDomain.BasicProduct) ([]*document.Document, error) {
 	var bleveDocuments []*document.Document
 	index, err := r.getIndex()
@@ -257,7 +250,7 @@ func (r *BleveRepository) productToBleveDocs(product productDomain.BasicProduct)
 		return nil, err
 	}
 
-	// Add _source field with Gib ncoded content (to restore original)
+	// Add _source field with Gob encoded content (to restore original)
 	field := document.NewTextFieldWithIndexingOptions(
 		sourceFieldName, nil, productEncoded, document.StoreField)
 	bleveProductDocument = bleveProductDocument.AddField(field)
@@ -344,7 +337,7 @@ func (r *BleveRepository) categoryParentCodes(teaser productDomain.CategoryTease
 	return codes, paths
 }
 
-// categoryTeaserToBleve returns bleve documents for type category for the given Teaserdata (called recursive with Parent)
+// categoryTeaserToBleve returns bleve documents for type category for the given TeaserData (called recursive with Parent)
 func (r *BleveRepository) categoryTeaserToBleve(categoryTeaser productDomain.CategoryTeaser, alreadyAddedBleveDocs []*document.Document) ([]*document.Document, error) {
 	index, err := r.getIndex()
 	if err != nil {
@@ -439,7 +432,6 @@ func (r *BleveRepository) CategoryTree(_ context.Context, code string) (category
 	return rootTreeNode, nil
 }
 
-// mapCatToTree
 func mapCatToTree(category categoryDomain.Category) *categoryDomain.TreeData {
 	return &categoryDomain.TreeData{
 		CategoryCode:          category.Code(),
@@ -481,7 +473,7 @@ func (r *BleveRepository) subTrees(parentNode *categoryDomain.TreeData) ([]*cate
 	return subTreeNodes, nil
 }
 
-// Category - receives indexed categories
+// Category receives indexed categories
 func (r *BleveRepository) Category(_ context.Context, code string) (categoryDomain.Category, error) {
 
 	r.cacheMutex.RLock()
@@ -528,7 +520,6 @@ func (r *BleveRepository) Category(_ context.Context, code string) (categoryDoma
 
 }
 
-// mapHitToCategory
 func mapHitToCategory(hit *search.DocumentMatch) categoryDomain.Category {
 	return &categoryDomain.CategoryData{
 		CategoryCode:       fmt.Sprintf("%v", hit.Fields["Category.Code"]),
@@ -613,9 +604,9 @@ func (r *BleveRepository) Find(_ context.Context, filters ...searchDomain.Filter
 		facetRequest := bleve.NewFacetRequest(fieldPrefixInIndexedDocument+"Facet.Attribute."+facetConfig.AttributeCode, facetConfig.Amount)
 		facetsRequests[facetConfig.AttributeCode] = facetRequest
 	}
-	query := bleve.NewConjunctionQuery(filterQueryParts...)
+	conjunctionQuery := bleve.NewConjunctionQuery(filterQueryParts...)
 	from := (currentPage - 1) * pageSize
-	searchRequest := bleve.NewSearchRequestOptions(query, pageSize, from, false)
+	searchRequest := bleve.NewSearchRequestOptions(conjunctionQuery, pageSize, from, false)
 	searchRequest.Facets = facetsRequests
 	searchRequest.Fields = append(searchRequest.Fields, sourceFieldName)
 	if sortingField != "" {
@@ -828,8 +819,8 @@ func (r *BleveRepository) constructCategoryTreeFacet(parentSlice []*searchDomain
 }
 
 func (r *BleveRepository) decodeProduct(b []byte) (productDomain.BasicProduct, error) {
-	messout := bytes.NewBuffer(b)
-	dec := gob.NewDecoder(messout)
+	buffer := bytes.NewBuffer(b)
+	dec := gob.NewDecoder(buffer)
 
 	var sp productDomain.BasicProduct
 	err := dec.Decode(&sp)

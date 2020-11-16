@@ -3,22 +3,23 @@ package test_test
 import (
 	"context"
 	"fmt"
+	"path"
+	"runtime"
 	"sort"
 	"testing"
 
-	domain2 "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
-	csvcommerceLoader "flamingo.me/flamingo-commerce-adapter-standalone/csvindexing/infrastructure/commercesearch"
 	"flamingo.me/flamingo/v3/framework/config"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"github.com/stretchr/testify/require"
 
-	"path"
-	"runtime"
+	domain2 "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
+	csvcommerceLoader "flamingo.me/flamingo-commerce-adapter-standalone/csvindexing/infrastructure/commercesearch"
 
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/productsearch"
 	"flamingo.me/flamingo-commerce/v3/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 	"github.com/stretchr/testify/assert"
+
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/productsearch"
 )
 
 func TestFactoryCanBuildSimpleTest(t *testing.T) {

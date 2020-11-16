@@ -11,7 +11,7 @@ import (
 )
 
 type (
-	// IndexProcess - responsible to call the injected loader to index products into the passed repository
+	// IndexProcess responsible to call the injected loader to index products into the passed repository
 	IndexProcess struct {
 		indexUpdater   IndexUpdater
 		indexer        *Indexer
@@ -170,11 +170,11 @@ func (h *CategoryTreeBuilder) AddCategoryData(code string, name string, parentCo
 	if h.nodeLinkRawData == nil {
 		h.nodeLinkRawData = make(map[string]string)
 	}
-	buildedBasicNode := categoryDomain.TreeData{
+	builtBasicNode := categoryDomain.TreeData{
 		CategoryCode: code,
 		CategoryName: name,
 	}
-	h.categoryTreeIndex[code] = &buildedBasicNode
+	h.categoryTreeIndex[code] = &builtBasicNode
 	h.nodeLinkRawData[code] = parentCode
 }
 

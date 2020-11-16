@@ -126,7 +126,7 @@ func TestBleveProductRepository_AddProduct(t *testing.T) {
 	err = s.UpdateProducts(context.Background(), []domain.BasicProduct{product, product2, product3})
 	assert.NoError(t, err)
 
-	//test pagination
+	// test pagination
 	t.Run("Find product by Id", func(t *testing.T) {
 		found, err := s.FindByMarketplaceCode(context.Background(), "id")
 		require.NoError(t, err)
@@ -134,7 +134,7 @@ func TestBleveProductRepository_AddProduct(t *testing.T) {
 
 	})
 
-	//test if category was indexed as well
+	// test if category was indexed as well
 	t.Run("Find by different Queries", func(t *testing.T) {
 		result, _ := s.Find(context.Background(), searchDomain.NewQueryFilter("atitle"), searchDomain.NewSortFilter("Title", "A"))
 		require.Len(t, result.Hits, 1, "expect 1 results for 'atitle' search")
@@ -160,7 +160,7 @@ func TestBleveProductRepository_AddProduct(t *testing.T) {
 		require.Equal(t, 3, result.SearchMeta.NumResults, "expect 2 results for * search")
 		assert.Equal(t, "green bag of something", result.Hits[0].BaseData().Title, "descending should have b first")
 
-		//sort by price
+		// sort by price
 		result, _ = s.Find(context.Background(), searchDomain.NewQueryFilter("*"), searchDomain.NewSortFilter("Price", "A"))
 		require.Equal(t, 3, result.SearchMeta.NumResults, "expect 2 results for * search")
 		assert.Equal(t, 7.99, result.Hits[0].TeaserData().TeaserPrice.GetFinalPrice().FloatAmount(), "ascending price should have cheapest price first")
@@ -169,7 +169,7 @@ func TestBleveProductRepository_AddProduct(t *testing.T) {
 
 	})
 
-	//test if category was indexed as well
+	// test if category was indexed as well
 	t.Run("Filter by category", func(t *testing.T) {
 		result, _ := s.Find(context.Background(), searchDomain.NewQueryFilter("*"), categoryDomain.NewCategoryFacet("Sub1"))
 		require.Equal(t, 1, result.SearchMeta.NumResults, "expect 1 results for 'Sub1' category search")
@@ -183,7 +183,7 @@ func TestBleveProductRepository_AddProduct(t *testing.T) {
 
 	})
 
-	//test pagination
+	// test pagination
 	t.Run("Test pagination", func(t *testing.T) {
 
 		result, _ := s.Find(context.Background(), searchDomain.NewQueryFilter("*"), searchDomain.NewPaginationPageFilter(1), searchDomain.NewPaginationPageSizeFilter(2), searchDomain.NewSortFilter("Title", "A"))
@@ -315,7 +315,7 @@ func TestBleveRepository_FacetsSearch(t *testing.T) {
 	err = s.UpdateProducts(context.Background(), []domain.BasicProduct{product, product2, product3})
 	assert.NoError(t, err)
 
-	//test pagination
+	// test pagination
 	t.Run("Test facets", func(t *testing.T) {
 
 		result, _ := s.Find(context.Background(),
@@ -396,7 +396,7 @@ func TestBleveRepository_CategorySearch(t *testing.T) {
 			},
 		},
 	})
-	//test if category was indexed as well
+	// test if category was indexed as well
 	t.Run("Find category code", func(t *testing.T) {
 		cat, _ := s.Category(context.Background(), "Sub")
 		if assert.NotNil(t, cat) {
@@ -416,7 +416,7 @@ func TestBleveRepository_CategorySearch(t *testing.T) {
 
 	})
 
-	//test if category was indexed as well
+	// test if category was indexed as well
 	t.Run("Get category tree", func(t *testing.T) {
 		cat, _ := s.CategoryTree(context.Background(), "")
 		if assert.NotNil(t, cat) {
@@ -443,7 +443,7 @@ func TestBleveRepository_ProductDecodeEncode(t *testing.T) {
 
 	r := &BleveRepository{}
 
-	//test pagination
+	// test pagination
 	t.Run("Test simpl", func(t *testing.T) {
 		simpleProduct := domain.SimpleProduct{
 			Identifier: "testid",
@@ -489,7 +489,7 @@ func TestBleveRepository_ProductDecodeEncode(t *testing.T) {
 		assert.Equal(t, simpleProduct, productGot)
 	})
 
-	//test pagination
+	// test pagination
 	t.Run("Test configurable", func(t *testing.T) {
 		product := domain.ConfigurableProduct{
 			Identifier: "testid",

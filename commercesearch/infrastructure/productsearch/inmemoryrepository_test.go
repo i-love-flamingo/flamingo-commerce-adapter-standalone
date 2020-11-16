@@ -2,10 +2,11 @@ package productsearch
 
 import (
 	"context"
+	"testing"
+
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"github.com/stretchr/testify/require"
-	"testing"
 
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 	"flamingo.me/flamingo-commerce/v3/product/domain"
@@ -56,7 +57,7 @@ func TestInMemoryProductRepository_AddProduct(t *testing.T) {
 	assert.Equal(t, "a title", result.Hits[0].BaseData().Title)
 	assert.Equal(t, "b title", result.Hits[1].BaseData().Title)
 
-	//test pagination
+	// test pagination
 	t.Run("Test pagination", func(t *testing.T) {
 		result, _ = s.Find(context.Background(), categoryDomain.CategoryFacet{
 			CategoryCode: "Sub",

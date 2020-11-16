@@ -1,5 +1,7 @@
 module flamingo.me/flamingo-commerce-adapter-standalone
 
+go 1.13
+
 require (
 	flamingo.me/dingo v0.2.9
 	flamingo.me/flamingo-commerce/v3 v3.3.1-0.20200904150134-2ee09e6ec33b
@@ -18,6 +20,7 @@ require (
 	github.com/garyburd/redigo v1.6.0 // indirect
 	github.com/go-bindata/go-bindata v0.0.0-20190711162640-ee3c2418e368 // indirect
 	github.com/golang/lint v0.0.0-20180702182130-06c8688daad7 // indirect
+	github.com/google/go-cmp v0.4.0
 	github.com/gordonklaus/ineffassign v0.0.0-20200809085317-e36bfde3bb78 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/jordan-wright/email v0.0.0-20200602115436-fd8a7622303e
@@ -33,4 +36,4 @@ require (
 	gotest.tools v2.2.0+incompatible // indirect
 )
 
-go 1.13
+

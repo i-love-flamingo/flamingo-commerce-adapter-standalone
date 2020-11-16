@@ -2,13 +2,14 @@ package domain
 
 import (
 	"context"
+
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 	"flamingo.me/flamingo-commerce/v3/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 )
 
 type (
-	// ProductRepository - interface
+	// ProductRepository port
 	ProductRepository interface {
 		FindByMarketplaceCode(ctx context.Context, marketplaceCode string) (domain.BasicProduct, error)
 		Find(ctx context.Context, filters ...searchDomain.Filter) (*domain.SearchResult, error)
@@ -17,7 +18,7 @@ type (
 		ClearProducts(ctx context.Context, productIds []string) error
 	}
 
-	//CategoryRepository interface
+	// CategoryRepository port
 	CategoryRepository interface {
 		PrepareIndex(ctx context.Context) error
 		CategoryTree(ctx context.Context, code string) (categoryDomain.Tree, error)

@@ -84,37 +84,9 @@ func (m *Module) Configure(injector *dingo.Injector) {
 	case "bleve":
 		injector.Bind((*productSearchDomain.ProductRepository)(nil)).To(productsearch.BleveRepository{}).In(dingo.ChildSingleton)
 		injector.Bind((*productSearchDomain.CategoryRepository)(nil)).To(productsearch.BleveRepository{}).In(dingo.ChildSingleton)
-
-		/*
-			injector.Bind((*productSearchDomain.ProductRepository)(nil)).ToProvider(
-				func(logger flamingo.Logger, repo *productSearch.BleveRepository, indexProcess *productSearchDomain.IndexProcess, config *struct {
-					EnableIndexing bool `inject:"config:flamingoCommerceAdapterStandalone.productSearch.enableIndexing,optional"`
-				}) productSearchDomain.ProductRepository {
-					enableIndexing := false
-					if config != nil {
-						enableIndexing = config.EnableIndexing
-					}
-					return indexIntoRepo(logger, repo, indexProcess, enableIndexing)
-				}).In(dingo.ChildSingleton)
-		*/
-
 	default:
 		injector.Bind((*productSearchDomain.ProductRepository)(nil)).To(productsearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
 		injector.Bind((*productSearchDomain.CategoryRepository)(nil)).To(productsearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
-
-		/*
-			injector.Bind((*productSearchDomain.ProductRepository)(nil)).ToProvider(
-				func(logger flamingo.Logger, repo *productSearch.InMemoryProductRepository, indexProcess *productSearchDomain.IndexProcess, config *struct {
-					EnableIndexing bool `inject:"config:flamingoCommerceAdapterStandalone.productSearch.enableIndexing,optional"`
-				}) productSearchDomain.ProductRepository {
-					enableIndexing := false
-					if config != nil {
-						enableIndexing = config.EnableIndexing
-					}
-					return indexIntoRepo(logger, repo, indexProcess, enableIndexing)
-				}).In(dingo.ChildSingleton)
-		*/
-
 	}
 }
 
