@@ -66,14 +66,14 @@ flamingoCommerceAdapterStandalone: {
 
 		products: {
 			file: file & {
-				path: "resources/products/products.csv"
+				path: string | *"resources/products/products.csv"
 			}
 			attributesToSplit: [...string]
 		}
 
 		categories: {
 			file: file & {
-				path: "resources/categories/categories.csv"
+				path: string | *"resources/categories/categories.csv"
 			}
 		}
 		
