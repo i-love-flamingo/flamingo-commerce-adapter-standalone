@@ -4,18 +4,29 @@ import (
 	"bufio"
 	"encoding/csv"
 	"io"
-	"os"
-
 	"log"
+	"os"
 )
 
 type (
 	// RowDto is a simple Data Transfer Object to receive CSV Rows
 	RowDto map[string]string
+
+	// ReadOption option to modify the csv.Reader
+	ReadOption func(reader *csv.Reader)
 )
 
+// DelimiterOption to set the csv delimiter
+func DelimiterOption(delimiter rune) ReadOption {
+	return func(reader *csv.Reader) {
+		if delimiter > 0 {
+			reader.Comma = delimiter
+		}
+	}
+}
+
 // ReadCSV reads a CSV File and returns its Contents
-func ReadCSV(csvFile string) ([]RowDto, error) {
+func ReadCSV(csvFile string, options ...ReadOption) ([]RowDto, error) {
 	f, err := os.Open(csvFile)
 	if err != nil {
 		log.Printf("Error - RowDto %v", err)
@@ -28,7 +39,12 @@ func ReadCSV(csvFile string) ([]RowDto, error) {
 	// Create a new reader.
 	r := csv.NewReader(bufio.NewReader(f))
 	r.LazyQuotes = true
-	r.Comma = ','
+	r.TrimLeadingSpace = true
+	if options != nil {
+		for _, option := range options {
+			option(r)
+		}
+	}
 	rowCount := 0
 	isFirstRow := true
 

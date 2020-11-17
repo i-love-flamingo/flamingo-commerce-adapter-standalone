@@ -3,12 +3,14 @@ package productsearch
 import (
 	"context"
 	"errors"
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
-	"flamingo.me/flamingo/v3/framework/flamingo"
 	"fmt"
 	"math"
 	"sort"
 	"sync"
+
+	"flamingo.me/flamingo/v3/framework/flamingo"
+
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
 
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 
@@ -20,19 +22,19 @@ type (
 
 	// InMemoryProductRepository serves as a Repository of Products held in memory
 	InMemoryProductRepository struct {
-		//marketplaceCodeIndex - index to get products from marketplaceCode
+		// marketplaceCodeIndex index to get products from marketplaceCode, e.g. get product for market place code 'foobar'
 		marketplaceCodeIndex map[string]productDomain.BasicProduct
 
-		//attributeReverseIndex - index to get products from attribute
+		// attributeReverseIndex index to get all market place codes for a certain attribute, e.g. all market place codes with attribute 'size' and value 'large'
 		attributeReverseIndex map[string]map[string][]string
 
-		//productsByCategoriesReverseIndex - index to get products by categoryCode
+		// productsByCategoriesReverseIndex index to get all market place codes for a categoryCode, e.g. all market place codes with category 'clothing'
 		productsByCategoriesReverseIndex map[string][]string
 		addReadMutex                     sync.RWMutex
 
-		//for category adapters:
-		rootCategory     *categoryDomain.TreeData
-		categorTreeIndex map[string]*categoryDomain.TreeData
+		// for category adapters:
+		rootCategory      *categoryDomain.TreeData
+		categoryTreeIndex map[string]*categoryDomain.TreeData
 
 		logger flamingo.Logger
 	}
@@ -48,17 +50,17 @@ var (
 	_ domain.CategoryRepository = &InMemoryProductRepository{}
 )
 
-//PrepareIndex implementation
+// PrepareIndex implementation
 func (r *InMemoryProductRepository) PrepareIndex(_ context.Context) error {
 	return nil
 }
 
-//Inject dep
+// Inject dependencies
 func (r *InMemoryProductRepository) Inject(logger flamingo.Logger) {
 	r.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone").WithField(flamingo.LogKeyCategory, "InMemoryProductRepository")
 }
 
-// UpdateByCategoryTeasers - updates or appends a category to the Product Repository
+// UpdateByCategoryTeasers updates or appends a category to the Product Repository
 func (r *InMemoryProductRepository) UpdateByCategoryTeasers(_ context.Context, categoryTeasers []productDomain.CategoryTeaser) error {
 	for _, categoryTeaser := range categoryTeasers {
 
@@ -96,43 +98,57 @@ func (r *InMemoryProductRepository) UpdateProducts(_ context.Context, products [
 			return errors.New("No marketplace code ")
 		}
 		marketPlaceCode := product.BaseData().MarketPlaceCode
-		//Set reverseindex for marketplaceCode (the primary indendifier)
-		if r.marketplaceCodeIndex == nil {
-			r.marketplaceCodeIndex = make(map[string]productDomain.BasicProduct)
-		}
-		if r.marketplaceCodeIndex[marketPlaceCode] != nil {
-			err := errors.New("Duplicate for marketplace code " + marketPlaceCode)
-			r.logger.Error(err)
+
+		err := r.addProductToMarketplaceCodeReverseIndex(marketPlaceCode, product)
+		if err != nil {
 			return err
 		}
-		r.marketplaceCodeIndex[product.BaseData().MarketPlaceCode] = product
 
-		//Now add product to category indexes:
-		if r.productsByCategoriesReverseIndex == nil {
-			r.productsByCategoriesReverseIndex = make(map[string][]string)
-		}
-
-		for _, categoryTeaser := range product.BaseData().Categories {
-			r.productsByCategoriesReverseIndex[categoryTeaser.Code] = append(r.productsByCategoriesReverseIndex[categoryTeaser.Code], marketPlaceCode)
-		}
-		if product.BaseData().MainCategory.Code != "" {
-			if !inSlice(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode) {
-				r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code] = append(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode)
-			}
-		}
-
-		//Now fill the reverse index for all products attributes:
-		if r.attributeReverseIndex == nil {
-			r.attributeReverseIndex = make(map[string]map[string][]string)
-		}
-		for _, attribute := range product.BaseData().Attributes {
-			if _, ok := r.attributeReverseIndex[attribute.Code]; !ok {
-				r.attributeReverseIndex[attribute.Code] = make(map[string][]string)
-			}
-			r.attributeReverseIndex[attribute.Code][attribute.Value()] = append(r.attributeReverseIndex[attribute.Code][attribute.Value()], marketPlaceCode)
-		}
+		r.addMarketplaceCodeToCategoryReverseIndex(product, marketPlaceCode)
+		r.addMarketplaceCodeToAttributeReverseIndex(product, marketPlaceCode)
 	}
 
+	return nil
+}
+
+func (r *InMemoryProductRepository) addMarketplaceCodeToAttributeReverseIndex(product productDomain.BasicProduct, marketPlaceCode string) {
+	if r.attributeReverseIndex == nil {
+		r.attributeReverseIndex = make(map[string]map[string][]string)
+	}
+	for _, attribute := range product.BaseData().Attributes {
+		if _, ok := r.attributeReverseIndex[attribute.Code]; !ok {
+			r.attributeReverseIndex[attribute.Code] = make(map[string][]string)
+		}
+		r.attributeReverseIndex[attribute.Code][attribute.Value()] = append(r.attributeReverseIndex[attribute.Code][attribute.Value()], marketPlaceCode)
+	}
+}
+
+func (r *InMemoryProductRepository) addMarketplaceCodeToCategoryReverseIndex(product productDomain.BasicProduct, marketPlaceCode string) {
+	if r.productsByCategoriesReverseIndex == nil {
+		r.productsByCategoriesReverseIndex = make(map[string][]string)
+	}
+
+	for _, categoryTeaser := range product.BaseData().Categories {
+		r.productsByCategoriesReverseIndex[categoryTeaser.Code] = append(r.productsByCategoriesReverseIndex[categoryTeaser.Code], marketPlaceCode)
+	}
+	if product.BaseData().MainCategory.Code != "" {
+		if !inSlice(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode) {
+			r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code] = append(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode)
+		}
+	}
+}
+
+func (r *InMemoryProductRepository) addProductToMarketplaceCodeReverseIndex(marketPlaceCode string, product productDomain.BasicProduct) error {
+	// Set reverse index for marketplaceCode (the primary identifier)
+	if r.marketplaceCodeIndex == nil {
+		r.marketplaceCodeIndex = make(map[string]productDomain.BasicProduct)
+	}
+	if r.marketplaceCodeIndex[marketPlaceCode] != nil {
+		err := errors.New("Duplicate for marketplace code " + marketPlaceCode)
+		r.logger.Error(err)
+		return err
+	}
+	r.marketplaceCodeIndex[marketPlaceCode] = product
 	return nil
 }
 
@@ -148,7 +164,7 @@ func (r *InMemoryProductRepository) FindByMarketplaceCode(_ context.Context, mar
 	}
 }
 
-//CategoryTree returns tree - empty code returns Rootnode
+// CategoryTree returns tree - empty code returns RootNode
 func (r *InMemoryProductRepository) CategoryTree(_ context.Context, code string) (categoryDomain.Tree, error) {
 	if r.rootCategory == nil {
 		err := errors.New("category " + code + "not found. No tree indexed")
@@ -157,13 +173,13 @@ func (r *InMemoryProductRepository) CategoryTree(_ context.Context, code string)
 	if code == "" {
 		return r.rootCategory, nil
 	}
-	if tree, ok := r.categorTreeIndex[code]; ok {
+	if tree, ok := r.categoryTreeIndex[code]; ok {
 		return tree, nil
 	}
 	return nil, categoryDomain.ErrNotFound
 }
 
-//Category returns category - empty code returns root cat
+// Category returns category - empty code returns root cat
 func (r *InMemoryProductRepository) Category(_ context.Context, code string) (categoryDomain.Category, error) {
 	if r.rootCategory == nil {
 		return nil, errors.New("root not found")
@@ -174,7 +190,7 @@ func (r *InMemoryProductRepository) Category(_ context.Context, code string) (ca
 			CategoryName: r.rootCategory.CategoryName,
 		}, nil
 	}
-	if tree, ok := r.categorTreeIndex[code]; ok {
+	if tree, ok := r.categoryTreeIndex[code]; ok {
 		return &categoryDomain.CategoryData{
 			CategoryCode: tree.CategoryCode,
 			CategoryName: tree.CategoryName,
@@ -221,12 +237,12 @@ func (r *InMemoryProductRepository) Find(_ context.Context, filters ...searchDom
 	}
 
 	if !matchingMarketplaceCodes.initialFilled {
-		//get all products if not filtered yet
+		// get all products if not filtered yet
 		for _, p := range r.marketplaceCodeIndex {
 			productResults = append(productResults, p)
 		}
 	} else {
-		//otherwise get only the remaining marketplacecodes
+		// otherwise get only the remaining marketplace codes
 		productResults = r.getMatchingProducts(matchingMarketplaceCodes.currentSet)
 	}
 
@@ -310,21 +326,21 @@ func (s *marketPlaceCodeSet) intersection(set2 []string) {
 	s.currentSet = result
 }
 
-//addCategoryPath - merges in the given categoryToAdd to the  passed currentExisting
+// addCategoryPath merges in the given categoryToAdd to the  passed currentExisting
 // also adds new categories to the reverse index
 func (r *InMemoryProductRepository) addCategoryPath(currentTreeNode *categoryDomain.TreeData, treeNodeToAdd *categoryDomain.TreeData) *categoryDomain.TreeData {
-	if r.categorTreeIndex == nil {
-		r.categorTreeIndex = make(map[string]*categoryDomain.TreeData)
+	if r.categoryTreeIndex == nil {
+		r.categoryTreeIndex = make(map[string]*categoryDomain.TreeData)
 	}
-	//if its the first node then make as current node
+	// if its the first node then make as current node
 	if currentTreeNode == nil {
 		clone := *treeNodeToAdd
 		currentTreeNode = &clone
 		currentTreeNode.SubTreesData = nil
-		r.categorTreeIndex[currentTreeNode.CategoryCode] = currentTreeNode
+		r.categoryTreeIndex[currentTreeNode.CategoryCode] = currentTreeNode
 	}
 	if currentTreeNode.CategoryCode != treeNodeToAdd.CategoryCode {
-		//No common root node - exit
+		// No common root node - exit
 		return currentTreeNode
 	}
 	for _, subTreeNodeToAdd := range treeNodeToAdd.SubTreesData {
@@ -332,11 +348,11 @@ func (r *InMemoryProductRepository) addCategoryPath(currentTreeNode *categoryDom
 		for _, existingSubTree := range currentTreeNode.SubTreesData {
 			if existingSubTree.CategoryCode == subTreeNodeToAdd.CategoryCode {
 				exists = true
-				//match - proceed in recursion
+				// match - proceed in recursion
 				existingSubTree = r.addCategoryPath(existingSubTree, subTreeNodeToAdd)
 			}
 		}
-		//subTreeNodeToAdd does not exist yet - so we merge it in:
+		// subTreeNodeToAdd does not exist yet - so we merge it in:
 		if !exists {
 			currentTreeNode.SubTreesData = append(currentTreeNode.SubTreesData, subTreeNodeToAdd)
 			r.updateCategoryIndex(subTreeNodeToAdd)
@@ -346,7 +362,7 @@ func (r *InMemoryProductRepository) addCategoryPath(currentTreeNode *categoryDom
 }
 
 func (r *InMemoryProductRepository) updateCategoryIndex(tree *categoryDomain.TreeData) {
-	r.categorTreeIndex[tree.Code()] = tree
+	r.categoryTreeIndex[tree.Code()] = tree
 	for _, stree := range tree.SubTreesData {
 		r.updateCategoryIndex(stree)
 	}

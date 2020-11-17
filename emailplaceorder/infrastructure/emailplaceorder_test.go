@@ -2,30 +2,31 @@ package infrastructure_test
 
 import (
 	"context"
-	"flamingo.me/flamingo-commerce-adapter-standalone/emailplaceorder/infrastructure"
-	"flamingo.me/flamingo-commerce-adapter-standalone/emailplaceorder/infrastructure/template"
+	"fmt"
+	"testing"
+
 	"flamingo.me/flamingo-commerce/v3/cart/domain/cart"
 	"flamingo.me/flamingo-commerce/v3/cart/domain/placeorder"
 	"flamingo.me/flamingo-commerce/v3/price/domain"
 	"flamingo.me/flamingo/v3/framework/config"
 	"flamingo.me/flamingo/v3/framework/flamingo"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 
-	"testing"
+	"flamingo.me/flamingo-commerce-adapter-standalone/emailplaceorder/infrastructure"
+	"flamingo.me/flamingo-commerce-adapter-standalone/emailplaceorder/infrastructure/template"
 )
 
 type mailSenderStub struct {
 	called   int
 	lastText string
-	lastHtml string
+	lastHTML string
 }
 
 var _ infrastructure.MailSender = &mailSenderStub{}
 
 func (m *mailSenderStub) Send(credentials infrastructure.Credentials, to string, fromMail string, fromName string, mail *infrastructure.Mail) error {
 	m.called++
-	m.lastHtml = mail.HTML
+	m.lastHTML = mail.HTML
 	m.lastText = mail.Plain
 	return nil
 }
@@ -59,9 +60,9 @@ func TestPlaceOrderServiceAdapter_PlaceGuestCart(t *testing.T) {
 		po, err := adapter.PlaceGuestCart(context.Background(), &exampleCart, &payment)
 		assert.NoError(t, err)
 		assert.Len(t, po, 2)
-		assert.Contains(t, mailsender.lastHtml, "adrianna@mail.de")
-		assert.Contains(t, mailsender.lastHtml, "ProductName 2")
-		assert.Contains(t, mailsender.lastHtml, "Opa", "Deliveryaddress not part of mail template")
+		assert.Contains(t, mailsender.lastHTML, "adrianna@mail.de")
+		assert.Contains(t, mailsender.lastHTML, "ProductName 2")
+		assert.Contains(t, mailsender.lastHTML, "Opa", "Deliveryaddress not part of mail template")
 	})
 
 	t.Run("cart with delivery same as billing ", func(t *testing.T) {
@@ -86,9 +87,9 @@ func TestPlaceOrderServiceAdapter_PlaceGuestCart(t *testing.T) {
 		po, err := adapter.PlaceGuestCart(context.Background(), &exampleCart, &payment)
 		assert.NoError(t, err)
 		assert.Len(t, po, 2)
-		assert.Contains(t, mailsender.lastHtml, "adrianna@mail.de")
-		assert.Contains(t, mailsender.lastHtml, "ProductName 2")
-		assert.Contains(t, mailsender.lastHtml, "Use billing address", "Same as billing missing")
+		assert.Contains(t, mailsender.lastHTML, "adrianna@mail.de")
+		assert.Contains(t, mailsender.lastHTML, "ProductName 2")
+		assert.Contains(t, mailsender.lastHTML, "Use billing address", "Same as billing missing")
 	})
 
 }

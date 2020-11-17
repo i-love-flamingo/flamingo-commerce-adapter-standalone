@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+
 	domain "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
 
 	productDomain "flamingo.me/flamingo-commerce/v3/product/domain"
@@ -14,7 +15,7 @@ type (
 	}
 )
 
-//Inject - dingo injector
+// Inject dependencies
 func (ps *ServiceAdapter) Inject(productRepository domain.ProductRepository) {
 	ps.productRepository = productRepository
 }

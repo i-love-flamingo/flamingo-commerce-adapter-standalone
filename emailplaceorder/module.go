@@ -10,7 +10,7 @@ import (
 )
 
 type (
-	// Module registers our profiler
+	// Module registers our email place order adapter
 	Module struct {
 	}
 )

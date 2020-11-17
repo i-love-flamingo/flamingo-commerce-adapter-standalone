@@ -3,31 +3,33 @@ package commercesearch
 import (
 	"context"
 	"errors"
-	commerceSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
-	categorydomain "flamingo.me/flamingo-commerce/v3/category/domain"
-
 	"fmt"
-	"strings"
-
-	priceDomain "flamingo.me/flamingo-commerce/v3/price/domain"
-
 	"strconv"
+	"strings"
+	"time"
 
-	"flamingo.me/flamingo-commerce-adapter-standalone/csvindexing/infrastructure/csv"
-
+	categorydomain "flamingo.me/flamingo-commerce/v3/category/domain"
+	priceDomain "flamingo.me/flamingo-commerce/v3/price/domain"
 	"flamingo.me/flamingo-commerce/v3/product/domain"
+	"flamingo.me/flamingo/v3/framework/config"
 	"flamingo.me/flamingo/v3/framework/flamingo"
+
+	commerceSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
+	"flamingo.me/flamingo-commerce-adapter-standalone/csvindexing/infrastructure/csv"
 )
 
 type (
 	// IndexUpdater implements indexing based on CSV file
 	IndexUpdater struct {
-		logger              flamingo.Logger
-		productCsvFile      string
-		categoryCsvFile     string
-		categoryTreeBuilder *commerceSearchDomain.CategoryTreeBuilder
-		locale              string
-		currency            string
+		logger                   flamingo.Logger
+		productCsvFile           string
+		productCsvDelimiter      rune
+		productAttributesToSplit map[string]struct{}
+		categoryCsvFile          string
+		categoryCsvDelimiter     rune
+		categoryTreeBuilder      *commerceSearchDomain.CategoryTreeBuilder
+		locale                   string
+		currency                 string
 	}
 )
 
@@ -38,23 +40,43 @@ var (
 // Inject method to inject dependencies
 func (f *IndexUpdater) Inject(logger flamingo.Logger, categoryTreeBuilder *commerceSearchDomain.CategoryTreeBuilder,
 	config *struct {
-		ProductCsvFile  string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.productCsvPath"`
-		CategoryCsvFile string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categoryCsvPath, optional"`
-		Locale          string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
-		Currency        string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
+		ProductCsvFile           string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.path"`
+		ProductCsvDelimiter      string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.delimiter"`
+		ProductAttributesToSplit config.Slice `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.attributesToSplit"`
+		CategoryCsvFile          string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categories.file.path,optional"`
+		CategoryCsvDelimiter     string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categories.file.delimiter,optional"`
+		Locale                   string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
+		Currency                 string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
 	}) {
 	f.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone.csvindexing").WithField(flamingo.LogKeyCategory, "IndexUpdater")
-	if config == nil {
-		return
-	}
-	f.productCsvFile = config.ProductCsvFile
-	f.categoryCsvFile = config.CategoryCsvFile
-	f.locale = config.Locale
-	f.currency = config.Currency
 	f.categoryTreeBuilder = categoryTreeBuilder
+	if config != nil {
+		f.productCsvFile = config.ProductCsvFile
+		if config.ProductCsvDelimiter != "" {
+			f.productCsvDelimiter = []rune(config.ProductCsvDelimiter)[0]
+		}
+		f.categoryCsvFile = config.CategoryCsvFile
+		if config.CategoryCsvDelimiter != "" {
+			f.categoryCsvDelimiter = []rune(config.CategoryCsvDelimiter)[0]
+		}
+
+		var toSplit []string
+		err := config.ProductAttributesToSplit.MapInto(&toSplit)
+		if err != nil {
+			panic(err)
+		}
+
+		f.productAttributesToSplit = make(map[string]struct{})
+		for _, attribute := range toSplit {
+			f.productAttributesToSplit[attribute] = struct{}{}
+		}
+
+		f.locale = config.Locale
+		f.currency = config.Currency
+	}
 }
 
-//Index starts index process
+// Index starts index process
 func (f *IndexUpdater) Index(ctx context.Context, indexer *commerceSearchDomain.Indexer) error {
 	f.logger.Info(fmt.Sprintf("Start loading CSV file: %v  with locale: %v and currency %v", f.productCsvFile, f.locale, f.currency))
 
@@ -62,7 +84,7 @@ func (f *IndexUpdater) Index(ctx context.Context, indexer *commerceSearchDomain.
 	var tree categorydomain.Tree
 	// read category tree
 	if f.categoryCsvFile != "" {
-		catrows, err := csv.ReadCSV(f.categoryCsvFile)
+		catrows, err := csv.ReadCSV(f.categoryCsvFile, csv.DelimiterOption(f.productCsvDelimiter))
 		if err != nil {
 			return errors.New(err.Error() + " / File: " + f.categoryCsvFile)
 		}
@@ -70,15 +92,14 @@ func (f *IndexUpdater) Index(ctx context.Context, indexer *commerceSearchDomain.
 			f.categoryTreeBuilder.AddCategoryData(row["code"], row["label-"+f.locale], row["parent"])
 		}
 		tree, err = f.categoryTreeBuilder.BuildTree()
-		//fmt.Printf("\n %#v",tree)
-		//printTree(tree,"")
+		// printTree(tree,"")
 		if err != nil {
 			return err
 		}
 	}
 
-	//Index products
-	rows, err := csv.ReadCSV(f.productCsvFile)
+	// Index products
+	rows, err := csv.ReadCSV(f.productCsvFile, csv.DelimiterOption(f.categoryCsvDelimiter))
 	if err != nil {
 		return errors.New(err.Error() + " / File: " + f.productCsvFile)
 	}
@@ -159,7 +180,16 @@ func splitTrimmed(value string) []string {
 
 // validateRow ensures CSV Rows have the correct columns
 func (f *IndexUpdater) validateRow(row map[string]string, locale string, currency string, additionalRequiredCols []string) error {
-	additionalRequiredCols = append(additionalRequiredCols, []string{"marketplaceCode", "retailerCode", "title-" + locale, "metaKeywords-" + locale, "shortDescription-" + locale, "description-" + locale, "price-" + currency}...)
+	additionalRequiredCols = append(additionalRequiredCols,
+		[]string{
+			"marketplaceCode",
+			"retailerCode",
+			"title-" + locale,
+			"metaKeywords-" + locale,
+			"shortDescription-" + locale,
+			"description-" + locale,
+			"price-" + currency,
+		}...)
 	for _, requiredAttribute := range additionalRequiredCols {
 		if _, ok := row[requiredAttribute]; !ok {
 			return fmt.Errorf("required attribute %q is missing", requiredAttribute)
@@ -174,11 +204,33 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 	attributes := make(map[string]domain.Attribute)
 
 	for key, data := range row {
+
+		// skip other locales
+		parts := strings.Split(key, "-")
+		if len(parts) > 1 {
+			l := parts[len(parts)-1]
+			if l != "" && l != locale {
+				continue
+			}
+		}
+
+		key = strings.TrimSuffix(key, "-"+locale)
+
 		attributes[key] = domain.Attribute{
 			Code:      key,
 			CodeLabel: key,
 			Label:     data,
-			RawValue:  data,
+			RawValue: func() interface{} {
+				if _, found := f.productAttributesToSplit[key]; !found {
+					return data
+				}
+
+				var split []interface{}
+				for _, s := range strings.Split(data, ",") {
+					split = append(split, s)
+				}
+				return split
+			}(),
 		}
 	}
 
@@ -194,6 +246,14 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 		}
 	}
 
+	stockLevel := domain.StockLevelInStock
+	switch row["stockLevel"] {
+	case domain.StockLevelInStock,
+		domain.StockLevelLowStock,
+		domain.StockLevelOutOfStock:
+		stockLevel = row["stockLevel"]
+	}
+
 	basicProductData := domain.BasicProductData{
 		MarketPlaceCode:  row["marketplaceCode"],
 		RetailerCode:     row["retailerCode"],
@@ -201,10 +261,11 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 		Title:            row["title-"+locale],
 		ShortDescription: row["shortDescription-"+locale],
 		Description:      row["description-"+locale],
-		RetailerName:     row["retailerCode"],
+		RetailerName:     row["retailerName"],
 		Media:            f.getMedia(row, locale),
 		Keywords:         strings.Split("metaKeywords-"+locale, ","),
 		Attributes:       attributes,
+		StockLevel:       stockLevel,
 	}
 	if len(categories) > 0 {
 		basicProductData.MainCategory = categories[0]
@@ -230,10 +291,29 @@ func (f *IndexUpdater) buildSimpleProduct(row map[string]string, locale string, 
 	if specialPriceErr == nil && specialPrice != price {
 		hasSpecialPrice = true
 	}
+
+	isSaleable := true
+	if _, ok := row["saleable"]; ok {
+		isSaleable, _ = strconv.ParseBool(row["saleable"])
+	}
+
+	saleableFrom := time.Time{}
+	if from, ok := row["saleableFromDate"]; ok {
+		saleableFrom, _ = time.Parse(time.RFC3339, from)
+	}
+
+	saleableTo := time.Time{}
+	if from, ok := row["saleableToDate"]; ok {
+		saleableTo, _ = time.Parse(time.RFC3339, from)
+	}
+
 	simple := domain.SimpleProduct{
 		Identifier:       f.getIdentifier(row),
 		BasicProductData: f.getBasicProductData(row, locale, tree),
 		Saleable: domain.Saleable{
+			IsSaleable:   isSaleable,
+			SaleableFrom: saleableFrom,
+			SaleableTo:   saleableTo,
 			ActivePrice: domain.PriceInfo{
 				Default:      priceDomain.NewFromFloat(price, currency).GetPayable(),
 				IsDiscounted: hasSpecialPrice,
@@ -243,9 +323,10 @@ func (f *IndexUpdater) buildSimpleProduct(row map[string]string, locale string, 
 	}
 
 	simple.Teaser = domain.TeaserData{
-		TeaserPrice:      simple.Saleable.ActivePrice,
-		ShortDescription: simple.BasicProductData.ShortDescription,
 		ShortTitle:       simple.BasicProductData.Title,
+		ShortDescription: simple.BasicProductData.ShortDescription,
+		TeaserPrice:      simple.Saleable.ActivePrice,
+		Media:            simple.BaseData().Media,
 		MarketPlaceCode:  simple.BasicProductData.MarketPlaceCode,
 	}
 

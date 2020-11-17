@@ -3,11 +3,12 @@ package infrastructure
 import (
 	"context"
 	"errors"
-	"flamingo.me/flamingo/v3/framework/config"
 	"fmt"
 	"net/smtp"
 	"net/textproto"
 	"strings"
+
+	"flamingo.me/flamingo/v3/framework/config"
 
 	cartDomain "flamingo.me/flamingo-commerce/v3/cart/domain/cart"
 	"flamingo.me/flamingo-commerce/v3/cart/domain/placeorder"
@@ -37,25 +38,25 @@ type (
 		User     string
 	}
 
-	//MailSender interface
+	// MailSender interface
 	MailSender interface {
 		Send(credentials Credentials, to string, fromMail string, fromName string, mail *Mail) error
 	}
 
-	//MailTemplate interface
+	// MailTemplate interface
 	MailTemplate interface {
 		AdminMail(cart *cartDomain.Cart, payment *placeorder.Payment) (*Mail, error)
 		CustomerMail(cart *cartDomain.Cart, payment *placeorder.Payment) (*Mail, error)
 	}
 
-	//Mail representation
+	// Mail representation
 	Mail struct {
 		HTML    string
 		Plain   string
 		Subject string
 	}
 
-	//DefaultMailSender implementation of MailSender
+	// DefaultMailSender implementation of MailSender
 	DefaultMailSender struct {
 		logger flamingo.Logger
 	}
@@ -189,12 +190,12 @@ func (e *PlaceOrderServiceAdapter) sendMail(to string, mail *Mail) error {
 	return nil
 }
 
-//Inject dep
+// Inject dep
 func (m *DefaultMailSender) Inject(logger flamingo.Logger) {
 	m.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone.emailplaceorder").WithField("category", "emailplaceorder")
 }
 
-//Send mail
+// Send mail
 func (m *DefaultMailSender) Send(credentials Credentials, to string, fromMail string, fromName string, mail *Mail) error {
 	err := credentials.Validate()
 	if err != nil {
@@ -212,7 +213,7 @@ func (m *DefaultMailSender) Send(credentials Credentials, to string, fromMail st
 	return email.Send(fmt.Sprintf("%v:%v", credentials.Server, credentials.Port), smtp.PlainAuth("", credentials.User, credentials.Password, credentials.Server))
 }
 
-//Validate helper
+// Validate helper
 func (s *Credentials) Validate() error {
 	if s.Server == "" {
 		return errors.New("Credentials missing server")

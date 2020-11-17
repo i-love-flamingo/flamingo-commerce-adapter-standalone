@@ -2,12 +2,14 @@ package search
 
 import (
 	"context"
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
+
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
+
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
 )
 
 type (
-	//ServiceAdapter for search service
+	// ServiceAdapter for search service
 	ServiceAdapter struct {
 		productRepository domain.ProductRepository
 	}
@@ -15,12 +17,12 @@ type (
 
 var _ searchDomain.SearchService = &ServiceAdapter{}
 
-//Inject - dingo injector
+// Inject inject dependencies
 func (p *ServiceAdapter) Inject(productRepository domain.ProductRepository) {
 	p.productRepository = productRepository
 }
 
-//Search implementation
+// Search implementation
 func (p *ServiceAdapter) Search(ctx context.Context, filter ...searchDomain.Filter) (map[string]searchDomain.Result, error) {
 	res, err := p.productRepository.Find(ctx, filter...)
 	if err != nil {
@@ -41,7 +43,7 @@ func (p *ServiceAdapter) Search(ctx context.Context, filter ...searchDomain.Filt
 	return mapRes, nil
 }
 
-//SearchFor implementation
+// SearchFor implementation
 func (p *ServiceAdapter) SearchFor(ctx context.Context, typ string, filter ...searchDomain.Filter) (*searchDomain.Result, error) {
 	res, err := p.Search(ctx, filter...)
 	if err != nil {

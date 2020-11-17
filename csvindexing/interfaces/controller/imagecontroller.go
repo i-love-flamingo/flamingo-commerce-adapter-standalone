@@ -6,10 +6,9 @@ import (
 	"image"
 	"image/jpeg"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
-
-	"path/filepath"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"flamingo.me/flamingo/v3/framework/web"
@@ -21,26 +20,26 @@ type (
 	ImageController struct {
 		Responder               *web.Responder  `inject:""`
 		Logger                  flamingo.Logger `inject:""`
-		ProductCsvPath          string          `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.productCsvPath"`
-		AllowedResizeParamaters string          `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.allowedImageResizeParamaters"`
+		ProductCsvPath          string          `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.path"`
+		AllowedResizeParameters string          `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.allowedImageResizeParameters"`
 	}
 )
 
-//renderChan - channel that is limited to 5 - used to block amount of parallel requests
+// renderChan channel that is limited to 5 - used to block amount of parallel requests
 var renderChan = make(chan struct{}, 5)
 
 // Get Response for Images
 func (vc *ImageController) Get(c context.Context, r *web.Request) web.Result {
-	//block if buffered channel size is reached
+	// block if buffered channel size is reached
 	renderChan <- struct{}{}
 	defer func() {
-		//release one entry from channel (will release one block)
+		// release one entry from channel (will release one block)
 		<-renderChan
 	}()
 
 	filename := r.Params["filename"]
 	size := r.Params["size"]
-	if !inSlice(size, strings.Split(vc.AllowedResizeParamaters, ",")) {
+	if !inSlice(size, strings.Split(vc.AllowedResizeParameters, ",")) {
 		vc.Logger.Warn("Imagesize " + size + " not allowed!")
 		size = "200x"
 	}

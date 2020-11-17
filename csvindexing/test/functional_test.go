@@ -2,21 +2,24 @@ package test_test
 
 import (
 	"context"
-	domain2 "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
-	csvcommerceLoader "flamingo.me/flamingo-commerce-adapter-standalone/csvindexing/infrastructure/commercesearch"
-	"flamingo.me/flamingo/v3/framework/flamingo"
 	"fmt"
-	"github.com/stretchr/testify/require"
+	"path"
+	"runtime"
 	"sort"
 	"testing"
 
-	"path"
-	"runtime"
+	"flamingo.me/flamingo/v3/framework/config"
+	"flamingo.me/flamingo/v3/framework/flamingo"
+	"github.com/stretchr/testify/require"
 
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/productsearch"
+	domain2 "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
+	csvcommerceLoader "flamingo.me/flamingo-commerce-adapter-standalone/csvindexing/infrastructure/commercesearch"
+
 	"flamingo.me/flamingo-commerce/v3/product/domain"
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 	"github.com/stretchr/testify/assert"
+
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/productsearch"
 )
 
 func TestFactoryCanBuildSimpleTest(t *testing.T) {
@@ -187,15 +190,20 @@ func getRepositoryWithFixturesLoaded(t *testing.T, productCsv string) *productse
 	loader.Inject(flamingo.NullLogger{},
 		&domain2.CategoryTreeBuilder{},
 		&struct {
-			ProductCsvFile  string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.productCsvPath"`
-			CategoryCsvFile string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categoryCsvPath, optional"`
-			Locale          string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
-			Currency        string `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
+			ProductCsvFile           string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.path"`
+			ProductCsvDelimiter      string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.delimiter"`
+			ProductAttributesToSplit config.Slice `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.attributesToSplit"`
+			CategoryCsvFile          string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categories.file.path,optional"`
+			CategoryCsvDelimiter     string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categories.file.delimiter,optional"`
+			Locale                   string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
+			Currency                 string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
 		}{
-			Currency:        "GBP",
-			Locale:          "en_GB",
-			ProductCsvFile:  "fixture/" + productCsv,
-			CategoryCsvFile: "fixture/categories.csv",
+			Currency:             "GBP",
+			Locale:               "en_GB",
+			ProductCsvFile:       "fixture/" + productCsv,
+			CategoryCsvFile:      "fixture/categories.csv",
+			ProductCsvDelimiter:  ",",
+			CategoryCsvDelimiter: ",",
 		},
 	)
 	err := loader.Index(context.Background(), indexer)
