@@ -92,7 +92,6 @@ func (f *IndexUpdater) Index(ctx context.Context, indexer *commerceSearchDomain.
 			f.categoryTreeBuilder.AddCategoryData(row["code"], row["label-"+f.locale], row["parent"])
 		}
 		tree, err = f.categoryTreeBuilder.BuildTree()
-		// fmt.Printf("\n %#v",tree)
 		// printTree(tree,"")
 		if err != nil {
 			return err

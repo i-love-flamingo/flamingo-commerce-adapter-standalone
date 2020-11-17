@@ -22,13 +22,13 @@ type (
 
 	// InMemoryProductRepository serves as a Repository of Products held in memory
 	InMemoryProductRepository struct {
-		// marketplaceCodeIndex index to get products from marketplaceCode
+		// marketplaceCodeIndex index to get products from marketplaceCode, e.g. get product for market place code 'foobar'
 		marketplaceCodeIndex map[string]productDomain.BasicProduct
 
-		// attributeReverseIndex index to get products from attribute
+		// attributeReverseIndex index to get all market place codes for a certain attribute, e.g. all market place codes with attribute 'size' and value 'large'
 		attributeReverseIndex map[string]map[string][]string
 
-		// productsByCategoriesReverseIndex index to get products by categoryCode
+		// productsByCategoriesReverseIndex index to get all market place codes for a categoryCode, e.g. all market place codes with category 'clothing'
 		productsByCategoriesReverseIndex map[string][]string
 		addReadMutex                     sync.RWMutex
 
@@ -98,43 +98,57 @@ func (r *InMemoryProductRepository) UpdateProducts(_ context.Context, products [
 			return errors.New("No marketplace code ")
 		}
 		marketPlaceCode := product.BaseData().MarketPlaceCode
-		// Set reverse index for marketplaceCode (the primary identifier)
-		if r.marketplaceCodeIndex == nil {
-			r.marketplaceCodeIndex = make(map[string]productDomain.BasicProduct)
-		}
-		if r.marketplaceCodeIndex[marketPlaceCode] != nil {
-			err := errors.New("Duplicate for marketplace code " + marketPlaceCode)
-			r.logger.Error(err)
+
+		err := r.addProductToMarketplaceCodeReverseIndex(marketPlaceCode, product)
+		if err != nil {
 			return err
 		}
-		r.marketplaceCodeIndex[product.BaseData().MarketPlaceCode] = product
 
-		// Now add product to category indexes:
-		if r.productsByCategoriesReverseIndex == nil {
-			r.productsByCategoriesReverseIndex = make(map[string][]string)
-		}
-
-		for _, categoryTeaser := range product.BaseData().Categories {
-			r.productsByCategoriesReverseIndex[categoryTeaser.Code] = append(r.productsByCategoriesReverseIndex[categoryTeaser.Code], marketPlaceCode)
-		}
-		if product.BaseData().MainCategory.Code != "" {
-			if !inSlice(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode) {
-				r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code] = append(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode)
-			}
-		}
-
-		// Now fill the reverse index for all products attributes:
-		if r.attributeReverseIndex == nil {
-			r.attributeReverseIndex = make(map[string]map[string][]string)
-		}
-		for _, attribute := range product.BaseData().Attributes {
-			if _, ok := r.attributeReverseIndex[attribute.Code]; !ok {
-				r.attributeReverseIndex[attribute.Code] = make(map[string][]string)
-			}
-			r.attributeReverseIndex[attribute.Code][attribute.Value()] = append(r.attributeReverseIndex[attribute.Code][attribute.Value()], marketPlaceCode)
-		}
+		r.addMarketplaceCodeToCategoryReverseIndex(product, marketPlaceCode)
+		r.addMarketplaceCodeToAttributeReverseIndex(product, marketPlaceCode)
 	}
 
+	return nil
+}
+
+func (r *InMemoryProductRepository) addMarketplaceCodeToAttributeReverseIndex(product productDomain.BasicProduct, marketPlaceCode string) {
+	if r.attributeReverseIndex == nil {
+		r.attributeReverseIndex = make(map[string]map[string][]string)
+	}
+	for _, attribute := range product.BaseData().Attributes {
+		if _, ok := r.attributeReverseIndex[attribute.Code]; !ok {
+			r.attributeReverseIndex[attribute.Code] = make(map[string][]string)
+		}
+		r.attributeReverseIndex[attribute.Code][attribute.Value()] = append(r.attributeReverseIndex[attribute.Code][attribute.Value()], marketPlaceCode)
+	}
+}
+
+func (r *InMemoryProductRepository) addMarketplaceCodeToCategoryReverseIndex(product productDomain.BasicProduct, marketPlaceCode string) {
+	if r.productsByCategoriesReverseIndex == nil {
+		r.productsByCategoriesReverseIndex = make(map[string][]string)
+	}
+
+	for _, categoryTeaser := range product.BaseData().Categories {
+		r.productsByCategoriesReverseIndex[categoryTeaser.Code] = append(r.productsByCategoriesReverseIndex[categoryTeaser.Code], marketPlaceCode)
+	}
+	if product.BaseData().MainCategory.Code != "" {
+		if !inSlice(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode) {
+			r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code] = append(r.productsByCategoriesReverseIndex[product.BaseData().MainCategory.Code], marketPlaceCode)
+		}
+	}
+}
+
+func (r *InMemoryProductRepository) addProductToMarketplaceCodeReverseIndex(marketPlaceCode string, product productDomain.BasicProduct) error {
+	// Set reverse index for marketplaceCode (the primary identifier)
+	if r.marketplaceCodeIndex == nil {
+		r.marketplaceCodeIndex = make(map[string]productDomain.BasicProduct)
+	}
+	if r.marketplaceCodeIndex[marketPlaceCode] != nil {
+		err := errors.New("Duplicate for marketplace code " + marketPlaceCode)
+		r.logger.Error(err)
+		return err
+	}
+	r.marketplaceCodeIndex[product.BaseData().MarketPlaceCode] = product
 	return nil
 }
 
