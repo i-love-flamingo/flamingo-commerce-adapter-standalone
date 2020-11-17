@@ -198,10 +198,12 @@ func getRepositoryWithFixturesLoaded(t *testing.T, productCsv string) *productse
 			Locale                   string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
 			Currency                 string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
 		}{
-			Currency:        "GBP",
-			Locale:          "en_GB",
-			ProductCsvFile:  "fixture/" + productCsv,
-			CategoryCsvFile: "fixture/categories.csv",
+			Currency:             "GBP",
+			Locale:               "en_GB",
+			ProductCsvFile:       "fixture/" + productCsv,
+			CategoryCsvFile:      "fixture/categories.csv",
+			ProductCsvDelimiter:  ",",
+			CategoryCsvDelimiter: ",",
 		},
 	)
 	err := loader.Index(context.Background(), indexer)

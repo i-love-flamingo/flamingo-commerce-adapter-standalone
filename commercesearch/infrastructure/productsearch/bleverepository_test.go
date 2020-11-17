@@ -153,20 +153,11 @@ func TestBleveProductRepository_AddProduct(t *testing.T) {
 	})
 
 	t.Run("Find with Sorting", func(t *testing.T) {
-		result, _ := s.Find(context.Background(), searchDomain.NewQueryFilter("*"), searchDomain.NewSortFilter("Title", "A"))
-		require.Equal(t, 3, result.SearchMeta.NumResults, "expect 2 results for * search")
-		assert.Equal(t, "atitle", result.Hits[0].BaseData().Title, "ascending should have a first")
-		result, _ = s.Find(context.Background(), searchDomain.NewQueryFilter("*"), searchDomain.NewSortFilter("Title", "D"))
-		require.Equal(t, 3, result.SearchMeta.NumResults, "expect 2 results for * search")
-		assert.Equal(t, "green bag of something", result.Hits[0].BaseData().Title, "descending should have b first")
-
-		// sort by price
-		result, _ = s.Find(context.Background(), searchDomain.NewQueryFilter("*"), searchDomain.NewSortFilter("Price", "A"))
+		result, _ := s.Find(context.Background(), searchDomain.NewQueryFilter("*"), searchDomain.NewSortFilter("price", "A"))
 		require.Equal(t, 3, result.SearchMeta.NumResults, "expect 2 results for * search")
 		assert.Equal(t, 7.99, result.Hits[0].TeaserData().TeaserPrice.GetFinalPrice().FloatAmount(), "ascending price should have cheapest price first")
-		result, _ = s.Find(context.Background(), searchDomain.NewQueryFilter("*"), searchDomain.NewSortFilter("Price", "D"))
+		result, _ = s.Find(context.Background(), searchDomain.NewQueryFilter("*"), searchDomain.NewSortFilter("price", "D"))
 		assert.Equal(t, 8.99, result.Hits[0].TeaserData().TeaserPrice.GetFinalPrice().FloatAmount(), "descending price should have expensivst first")
-
 	})
 
 	// test if category was indexed as well

@@ -59,9 +59,9 @@ Mandatory fields:
 * productType ("simple" or "configurable")
 * price-CURRENCY
 * shortDescription-LOCALE
-* saleable (1/0 if product is saleable true/false)
 
 Optional:
+* saleable (1/0 if product is saleable true/false, if not provided assumed as true)
 * saleableFromDate (from when should the product be saleable, date string in RFC3339 format)
 * saleableToDate (till when should the product be saleable, RFC3339)
 * specialPrice-CURRENCY (promotional price)

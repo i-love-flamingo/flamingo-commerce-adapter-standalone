@@ -181,7 +181,16 @@ func splitTrimmed(value string) []string {
 
 // validateRow ensures CSV Rows have the correct columns
 func (f *IndexUpdater) validateRow(row map[string]string, locale string, currency string, additionalRequiredCols []string) error {
-	additionalRequiredCols = append(additionalRequiredCols, []string{"marketplaceCode", "retailerCode", "title-" + locale, "metaKeywords-" + locale, "shortDescription-" + locale, "description-" + locale, "price-" + currency, "saleable"}...)
+	additionalRequiredCols = append(additionalRequiredCols,
+		[]string{
+			"marketplaceCode",
+			"retailerCode",
+			"title-" + locale,
+			"metaKeywords-" + locale,
+			"shortDescription-" + locale,
+			"description-" + locale,
+			"price-" + currency,
+		}...)
 	for _, requiredAttribute := range additionalRequiredCols {
 		if _, ok := row[requiredAttribute]; !ok {
 			return fmt.Errorf("required attribute %q is missing", requiredAttribute)
@@ -284,7 +293,11 @@ func (f *IndexUpdater) buildSimpleProduct(row map[string]string, locale string, 
 		hasSpecialPrice = true
 	}
 
-	isSaleable, _ := strconv.ParseBool(row["saleable"])
+	isSaleable := true
+	if _, ok := row["saleable"]; ok {
+		isSaleable, _ = strconv.ParseBool(row["saleable"])
+	}
+
 	saleableFrom := time.Time{}
 	if from, ok := row["saleableFromDate"]; ok {
 		saleableFrom, _ = time.Parse(time.RFC3339, from)
