@@ -30,10 +30,10 @@ type (
 
 	// CategoryTreeBuilder helper to build category tree
 	CategoryTreeBuilder struct {
-		// rootCategory - this is the link into the tree that is going to be build
+		// rootCategory - this is the link into the tree that is going to be built
 		rootCategory *categoryDomain.TreeData
 
-		// categoryTreeIndex - the link into the treenode - is build
+		// categoryTreeIndex - the link into the treenode - is built
 		categoryTreeIndex map[string]*categoryDomain.TreeData
 
 		// child -> parent

@@ -3,7 +3,7 @@
 # Flamingo Commerce Adapters Standalone
 
 This repository contains modules that allow to run Flamingo Commerce in a standalone mode.
-(Not connected to any thirds party headless ecommerce API).
+(Not connected to any third party headless ecommerce API).
 
 According to the Flamingo Commerce concept of "ports and adapters" the modules provide implementations for Flamingo Commerce Ports.
 
@@ -14,11 +14,11 @@ The following flamingo modules are part of that:
   * The module therefore internally uses Repository where products are stored and received from. You can choose between
     * A simple "InMemory" version
     * An implementation based on bleve - a go based indexed search implementation ( https://github.com/blevesearch/bleve)
-  * The module requires someone who takes care if indexing new products and categories. Therefore, it expects an implementation of an "IndexUpdater"
+  * The module requires someone who takes care of indexing new products and categories. Therefore, it expects an implementation of an "IndexUpdater"
   * See [Module commercesearch Readme](commercesearch/Readme.md)
     
 * **csvindexing**
-  * usful addon module for the *commercesearch* module
+  * useful addon module for the *commercesearch* module
   * Provide a "IndexUpdater" that loads products and categories from a CSV file
   * See [Module csvcommerce Readme](csvindexing/Readme.md)
     

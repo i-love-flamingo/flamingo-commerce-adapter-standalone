@@ -6,7 +6,7 @@ The provided adapters are:
 
 * productService (to retrieve single products)
 * productSearchService (to search for products - e.g. used on category listing page)
-* categoryService (for Flamingo Commerce "category" module - to receive categorys and category trees). To use the
+* categoryService (for Flamingo Commerce "category" module - to receive categories and category trees). To use the
   Adapter you need to add the main `CategoryModule` to your bootstrap.
 * searchService (for Flamingo Commerce "search" module allowing searching for products documents). To use the Adapters
   you need to add the main `SearchModule` to your bootstrap.
@@ -25,7 +25,7 @@ The indexing (loading) of products is done by implementing and registering the `
 
 ```go
 
-// IndexUpdater interface to Load products in a Index - secondary port
+// IndexUpdater interface to load products in an Index - secondary port
 IndexUpdater interface {
 // Indexer method that is called with an initialized Indexer. The passed Indexer provides helpers to update the Repository
 Index(ctx context.Context, rep *Indexer) error
