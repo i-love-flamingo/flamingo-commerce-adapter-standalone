@@ -12,6 +12,7 @@ type (
 	// RowDto is a simple Data Transfer Object to receive CSV Rows
 	RowDto map[string]string
 
+	// ReadOption option to modify the csv.Reader
 	ReadOption func(reader *csv.Reader)
 )
 

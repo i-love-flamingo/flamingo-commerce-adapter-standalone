@@ -66,7 +66,7 @@ func (i *Indexer) Inject(logger flamingo.Logger, productRepository ProductReposi
 	}
 }
 
-// PrepareIndex of the avaiable repository implementations
+// PrepareIndex of the available repository implementations
 func (i *Indexer) PrepareIndex(ctx context.Context) error {
 	err := i.productRepository.PrepareIndex(ctx)
 	if err != nil {

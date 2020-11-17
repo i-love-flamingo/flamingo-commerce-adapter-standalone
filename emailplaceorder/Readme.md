@@ -6,7 +6,7 @@ customer get an email confirmation.
 ## `MailSender` Port
 
 To deliver an email a custom `MailSender` implementation can be used. The module comes with a default implementation
-that relies on basic SMTP functionallity.
+that relies on basic SMTP functionality.
 
 ## `MailTemplate` Port
 
@@ -20,7 +20,7 @@ There are various configurations that can be set. In addition, the default SMTP 
 ```yaml
 flamingoCommerceAdapterStandalone:
   emailplaceorder:
-    emailAddress: fullfilment@flamingo-shop.example
+    emailAddress: fulfilment@flamingo-shop.example
     fromMail: no-reply@flamingo-shop.example
     fromName: Flamingo Shop
     credentials:

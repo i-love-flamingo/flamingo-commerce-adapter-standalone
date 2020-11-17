@@ -13,7 +13,7 @@ The provided adapters are:
 
 The available products need to be indexed first and will be stored in a `ProductRepository`.
 
-The module also provides an adapter to receive categories and Category Trees and provides an Adpater for the Flamingo
+The module also provides an adapter to receive categories and Category Trees and provides an Adapter for the Flamingo
 Commerce CategoryService (flamingo.me/flamingo-commerce/v3/category/domain)
 
 ## Indexing

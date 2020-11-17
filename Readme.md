@@ -32,7 +32,6 @@ The following flamingo modules are part of that:
 Just add the modules to your Flamingo bootstrap like this:
 
 ```go
-        // flamingo-commerce-adpater-standalone modules:
 		new(commercesearch.Module),
 		new(commercesearch.CategoryModule),
 		new(commercesearch.SearchModule),
