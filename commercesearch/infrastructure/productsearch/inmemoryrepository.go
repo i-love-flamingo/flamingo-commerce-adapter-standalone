@@ -148,7 +148,7 @@ func (r *InMemoryProductRepository) addProductToMarketplaceCodeReverseIndex(mark
 		r.logger.Error(err)
 		return err
 	}
-	r.marketplaceCodeIndex[product.BaseData().MarketPlaceCode] = product
+	r.marketplaceCodeIndex[marketPlaceCode] = product
 	return nil
 }
 
