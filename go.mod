@@ -10,6 +10,7 @@ require (
 	github.com/Masterminds/sprig v2.16.0+incompatible
 	github.com/PuerkitoBio/goquery v1.5.0 // indirect
 	github.com/RoaringBitmap/roaring v0.4.19 // indirect
+	github.com/Sirupsen/logrus v1.7.0 // indirect
 	github.com/aokoli/goutils v1.0.1 // indirect
 	github.com/blevesearch/bleve v0.8.0
 	github.com/blevesearch/blevex v0.0.0-20190916190636-152f0fe5c040 // indirect
@@ -40,3 +41,5 @@ require (
 	github.com/vanng822/go-premailer v0.0.0-20191214114701-be27abe028fe
 	golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81 // indirect
 )
+
+replace github.com/Sirupsen/logrus v1.7.0 => github.com/sirupsen/logrus v1.7.0
