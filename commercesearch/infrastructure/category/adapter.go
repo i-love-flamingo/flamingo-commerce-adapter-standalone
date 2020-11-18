@@ -46,6 +46,7 @@ func (a *Adapter) Get(ctx context.Context, categoryCode string) (categoryDomain.
 	t, err := a.categoryRepository.Category(ctx, categoryCode)
 	if err == categoryDomain.ErrNotFound {
 		a.logger.Warn(err)
+		return t, err
 	}
 	if err != nil {
 		a.logger.Error(err)
