@@ -559,25 +559,19 @@ func (r *BleveRepository) Find(_ context.Context, filters ...searchDomain.Filter
 
 	var filterQueryParts []query.Query
 
-	categoryTermQuery := func(code string) *query.PhraseQuery {
-		return bleve.NewPhraseQuery([]string{code}, fieldPrefixInIndexedDocument+"Facet.Categorycode")
-	}
 	for _, filter := range filters {
 		r.logger.Info("Find ", fmt.Sprintf("%T %#v", filter, filter))
 		switch f := filter.(type) {
 		case *searchDomain.KeyValueFilter:
 			if f.Key() == "category" {
-				// The code "category" is handeled as CategoryFacet
-				for _, catV := range f.KeyValues() {
-					filterQueryParts = append(filterQueryParts, categoryTermQuery(catV))
-				}
+				filterQueryParts = append(filterQueryParts, newDisjunctionTermQuery(f.KeyValues(), fieldPrefixInIndexedDocument+"Facet.Categorycode"))
 			} else {
-				filterQueryParts = append(filterQueryParts, bleve.NewPhraseQuery(f.KeyValues(), fieldPrefixInIndexedDocument+"Facet.Attribute."+f.Key()))
+				filterQueryParts = append(filterQueryParts, newDisjunctionTermQuery(f.KeyValues(), fieldPrefixInIndexedDocument+"Facet.Attribute."+f.Key()))
 			}
 		case categoryDomain.CategoryFacet:
-			filterQueryParts = append(filterQueryParts, categoryTermQuery(f.CategoryCode))
+			filterQueryParts = append(filterQueryParts, newDisjunctionTermQuery([]string{f.CategoryCode}, fieldPrefixInIndexedDocument+"Facet.Categorycode"))
 		case *categoryDomain.CategoryFacet:
-			filterQueryParts = append(filterQueryParts, categoryTermQuery(f.CategoryCode))
+			filterQueryParts = append(filterQueryParts, newDisjunctionTermQuery([]string{f.CategoryCode}, fieldPrefixInIndexedDocument+"Facet.Categorycode"))
 		case *searchDomain.PaginationPage:
 			currentPage = f.GetPage()
 		case *searchDomain.PaginationPageSize:
@@ -629,6 +623,15 @@ func (r *BleveRepository) Find(_ context.Context, filters ...searchDomain.Filter
 	markActiveFacets(filters, result)
 
 	return result, nil
+}
+
+// newDisjunctionTermQuery creates a disjunctive term query, meaning that any of the provided terms can match
+func newDisjunctionTermQuery(terms []string, field string) *query.DisjunctionQuery {
+	termQuery := bleve.NewDisjunctionQuery()
+	for _, term := range terms {
+		termQuery.AddQuery(bleve.NewPhraseQuery([]string{term}, field))
+	}
+	return termQuery
 }
 
 func markActiveFacets(filters []searchDomain.Filter, result *productDomain.SearchResult) {
