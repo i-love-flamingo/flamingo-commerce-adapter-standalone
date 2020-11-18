@@ -4,19 +4,18 @@ import (
 	"context"
 
 	"flamingo.me/dingo"
-	"flamingo.me/flamingo-commerce/v3/category/domain"
-	domain2 "flamingo.me/flamingo-commerce/v3/search/domain"
+	commerceCategoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
+	commerceProduct "flamingo.me/flamingo-commerce/v3/product"
+	commerceProductDomain "flamingo.me/flamingo-commerce/v3/product/domain"
+	commerceSearchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"flamingo.me/flamingo/v3/framework/web"
 
-	productSearchDomain "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/category"
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/search"
-
-	productdomain "flamingo.me/flamingo-commerce/v3/product/domain"
-
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/product"
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/productsearch"
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/search"
 )
 
 type (
@@ -25,10 +24,10 @@ type (
 		repositoryAdapter string
 	}
 
-	//EventSubscriber for starting the index processes
+	// EventSubscriber for starting the index processes
 	EventSubscriber struct {
 		logger       flamingo.Logger
-		indexProcess *productSearchDomain.IndexProcess
+		indexProcess *domain.IndexProcess
 	}
 
 	// CategoryModule registers the Category Adapter that uses the productRepositry
@@ -39,7 +38,7 @@ type (
 )
 
 // Inject for subscriber
-func (s *EventSubscriber) Inject(logger flamingo.Logger, indexProcess *productSearchDomain.IndexProcess) {
+func (s *EventSubscriber) Inject(logger flamingo.Logger, indexProcess *domain.IndexProcess) {
 	s.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone.commercesearch").WithField(flamingo.LogKeyCategory, "eventsubscriber")
 }
 
@@ -53,11 +52,11 @@ func (s *EventSubscriber) Notify(ctx context.Context, event flamingo.Event) {
 			s.logger.Error(err)
 			return
 		}
-		i, err := injector.GetInstance(productSearchDomain.IndexProcess{})
+		i, err := injector.GetInstance(domain.IndexProcess{})
 		if err != nil {
 			panic(err)
 		}
-		indexProcess := i.(*productSearchDomain.IndexProcess)
+		indexProcess := i.(*domain.IndexProcess)
 		err = indexProcess.Run(ctx)
 		if err != nil {
 			s.logger.Error(err)
@@ -76,28 +75,35 @@ func (m *Module) Inject(config *struct {
 
 // Configure DI
 func (m *Module) Configure(injector *dingo.Injector) {
-	injector.Bind((*productdomain.ProductService)(nil)).To(product.ServiceAdapter{})
-	injector.Bind((*productdomain.SearchService)(nil)).To(product.SearchServiceAdapter{})
+	injector.Bind((*commerceProductDomain.ProductService)(nil)).To(product.ServiceAdapter{})
+	injector.Bind((*commerceProductDomain.SearchService)(nil)).To(product.SearchServiceAdapter{})
 	flamingo.BindEventSubscriber(injector).To(new(EventSubscriber))
 
 	switch m.repositoryAdapter {
 	case "bleve":
-		injector.Bind((*productSearchDomain.ProductRepository)(nil)).To(productsearch.BleveRepository{}).In(dingo.ChildSingleton)
-		injector.Bind((*productSearchDomain.CategoryRepository)(nil)).To(productsearch.BleveRepository{}).In(dingo.ChildSingleton)
+		injector.Bind((*domain.ProductRepository)(nil)).To(productsearch.BleveRepository{}).In(dingo.ChildSingleton)
+		injector.Bind((*domain.CategoryRepository)(nil)).To(productsearch.BleveRepository{}).In(dingo.ChildSingleton)
 	default:
-		injector.Bind((*productSearchDomain.ProductRepository)(nil)).To(productsearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
-		injector.Bind((*productSearchDomain.CategoryRepository)(nil)).To(productsearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
+		injector.Bind((*domain.ProductRepository)(nil)).To(productsearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
+		injector.Bind((*domain.CategoryRepository)(nil)).To(productsearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
+	}
+}
+
+// Depends on other modules
+func (m *Module) Depends() []dingo.Module {
+	return []dingo.Module{
+		new(commerceProduct.Module),
 	}
 }
 
 // Configure DI
 func (module *CategoryModule) Configure(injector *dingo.Injector) {
-	injector.Bind(new(domain.CategoryService)).To(category.Adapter{})
+	injector.Bind(new(commerceCategoryDomain.CategoryService)).To(category.Adapter{})
 }
 
 // Configure DI
 func (module *SearchModule) Configure(injector *dingo.Injector) {
-	injector.Bind(new(domain2.SearchService)).To(search.ServiceAdapter{})
+	injector.Bind(new(commerceSearchDomain.SearchService)).To(search.ServiceAdapter{})
 }
 
 // CueConfig defines the cart module configuration
