@@ -84,7 +84,7 @@ func (f *IndexUpdater) Index(ctx context.Context, indexer *commerceSearchDomain.
 	var tree categorydomain.Tree
 	// read category tree
 	if f.categoryCsvFile != "" {
-		catrows, err := csv.ReadCSV(f.categoryCsvFile, csv.DelimiterOption(f.productCsvDelimiter))
+		catrows, err := csv.ReadCSV(f.categoryCsvFile, csv.DelimiterOption(f.categoryCsvDelimiter))
 		if err != nil {
 			return errors.New(err.Error() + " / File: " + f.categoryCsvFile)
 		}
@@ -92,14 +92,13 @@ func (f *IndexUpdater) Index(ctx context.Context, indexer *commerceSearchDomain.
 			f.categoryTreeBuilder.AddCategoryData(row["code"], row["label-"+f.locale], row["parent"])
 		}
 		tree, err = f.categoryTreeBuilder.BuildTree()
-		// printTree(tree,"")
 		if err != nil {
 			return err
 		}
 	}
 
 	// Index products
-	rows, err := csv.ReadCSV(f.productCsvFile, csv.DelimiterOption(f.categoryCsvDelimiter))
+	rows, err := csv.ReadCSV(f.productCsvFile, csv.DelimiterOption(f.productCsvDelimiter))
 	if err != nil {
 		return errors.New(err.Error() + " / File: " + f.productCsvFile)
 	}
