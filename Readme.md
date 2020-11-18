@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/i-love-flamingo/flamingo-commerce-adapter-standalone.svg?branch=master)](https://travis-ci.org/i-love-flamingo/flamingo-commerce-adapter-standalone?branch=master)
+[![Tests](https://github.com/i-love-flamingo/flamingo-commerce-adapter-standalone/workflows/Tests/badge.svg?branch=master)](https://github.com/i-love-flamingo/flamingo-commerce-adapter-standalone/actions?query=workflow%3ATests+branch%3Amaster)
 
 # Flamingo Commerce Adapters Standalone
 
