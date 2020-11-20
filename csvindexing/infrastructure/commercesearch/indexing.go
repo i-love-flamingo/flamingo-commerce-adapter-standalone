@@ -47,7 +47,7 @@ func (f *IndexUpdater) Inject(logger flamingo.Logger, categoryTreeBuilder *comme
 		CategoryCsvDelimiter     string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.categories.file.delimiter,optional"`
 		Locale                   string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.locale"`
 		Currency                 string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.currency"`
-	}) {
+	}) *IndexUpdater {
 	f.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone.csvindexing").WithField(flamingo.LogKeyCategory, "IndexUpdater")
 	f.categoryTreeBuilder = categoryTreeBuilder
 	if config != nil {
@@ -74,6 +74,8 @@ func (f *IndexUpdater) Inject(logger flamingo.Logger, categoryTreeBuilder *comme
 		f.locale = config.Locale
 		f.currency = config.Currency
 	}
+
+	return f
 }
 
 // Index starts index process
