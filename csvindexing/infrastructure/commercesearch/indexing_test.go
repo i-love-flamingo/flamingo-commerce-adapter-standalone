@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/productsearch"
+	productsearch "flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/commercesearch"
 	"flamingo.me/flamingo-commerce-adapter-standalone/csvindexing/infrastructure/commercesearch"
 )
 
