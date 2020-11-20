@@ -19,7 +19,7 @@ import (
 	searchDomain "flamingo.me/flamingo-commerce/v3/search/domain"
 	"github.com/stretchr/testify/assert"
 
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/productsearch"
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/commercesearch"
 )
 
 func TestFactoryCanBuildSimpleTest(t *testing.T) {
@@ -174,8 +174,8 @@ func getAppDirectory() string {
 	return path.Dir(filename)
 }
 
-func getRepositoryWithFixturesLoaded(t *testing.T, productCsv string) *productsearch.InMemoryProductRepository {
-	rep := &productsearch.InMemoryProductRepository{}
+func getRepositoryWithFixturesLoaded(t *testing.T, productCsv string) *commercesearch.InMemoryProductRepository {
+	rep := &commercesearch.InMemoryProductRepository{}
 	indexer := &domain2.Indexer{}
 	indexer.Inject(
 		flamingo.NullLogger{},

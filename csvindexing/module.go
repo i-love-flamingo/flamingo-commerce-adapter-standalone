@@ -59,26 +59,23 @@ func (m *ProductModule) CueConfig() string {
 	return `
 flamingoCommerceAdapterStandalone: {
 	csvindexing: {
-		file :: {
-			path: string
-			delimiter: string | *","
-		}
-
 		products: {
-			file: file & {
+			file: {
 				path: string | *"resources/products/products.csv"
+				delimiter: string | *","
 			}
 			attributesToSplit: [...string]
 		}
 
 		categories: {
-			file: file & {
+			file: {
 				path: string | *"resources/categories/categories.csv"
+				delimiter: string | *","
 			}
 		}
 		
-		locale: string | *"en"
-		currency: string | *"€"
+		locale: string | *"en_GB"
+		currency: string | *"GBP"
 		allowedImageResizeParameters: string | *"200x,300x,400x,x200,x300"
 	}
 }`
