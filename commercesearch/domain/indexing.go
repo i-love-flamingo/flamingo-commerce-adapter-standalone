@@ -58,12 +58,14 @@ var mutex sync.Mutex
 func (i *Indexer) Inject(logger flamingo.Logger, productRepository ProductRepository,
 	config *struct {
 		CategoryRepository CategoryRepository `inject:",optional"`
-	}) {
+	}) *Indexer {
 	i.logger = logger
 	i.productRepository = productRepository
 	if config != nil {
 		i.categoryRepository = config.CategoryRepository
 	}
+
+	return i
 }
 
 // PrepareIndex of the available repository implementations

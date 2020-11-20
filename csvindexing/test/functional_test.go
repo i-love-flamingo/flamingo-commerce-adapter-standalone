@@ -24,7 +24,7 @@ import (
 
 func TestFactoryCanBuildSimpleTest(t *testing.T) {
 
-	rep := getRepositoryWithFixturesLoaded(t, "products2.csv")
+	rep := getRepositoryWithFixturesLoaded(t, "products.csv")
 
 	rootCat, err := rep.Category(context.Background(), "")
 	require.NoError(t, err)
@@ -61,7 +61,7 @@ func TestFactoryBugForMissingCat(t *testing.T) {
 
 func TestFactoryCanBuildConfigurableTest(t *testing.T) {
 
-	rep := getRepositoryWithFixturesLoaded(t, "products2.csv")
+	rep := getRepositoryWithFixturesLoaded(t, "products.csv")
 
 	product, err := rep.FindByMarketplaceCode(context.Background(), "CONF-1000000")
 	assert.NoError(t, err)
@@ -85,7 +85,7 @@ func TestPageSize(t *testing.T) {
 	pageSizeA := 3
 	pageSizeB := 6
 
-	rep := getRepositoryWithFixturesLoaded(t, "products2.csv")
+	rep := getRepositoryWithFixturesLoaded(t, "products.csv")
 
 	pageSizeFilterA := searchDomain.NewPaginationPageSizeFilter(pageSizeA)
 	productHits, err := rep.Find(context.Background(), pageSizeFilterA)
@@ -101,7 +101,7 @@ func TestPageSize(t *testing.T) {
 
 func TestSortDirection(t *testing.T) {
 
-	rep := getRepositoryWithFixturesLoaded(t, "products2.csv")
+	rep := getRepositoryWithFixturesLoaded(t, "products.csv")
 
 	ascendingFilter := searchDomain.NewSortFilter("name", "A")
 	productHits, err := rep.Find(context.Background(), ascendingFilter)
@@ -120,7 +120,7 @@ func TestSortDirection(t *testing.T) {
 
 	descendingFilter := searchDomain.NewSortFilter("name", "D")
 	productHits, err = rep.Find(context.Background(), descendingFilter)
-	assert.NotNil(t, productHits)
+	require.NotNil(t, productHits)
 	assert.True(t, len(productHits.Hits) > 0, "expected at least a hit")
 
 	assert.NoError(t, err, fmt.Sprintf("Finding Products resulted in an error %s", err))
@@ -143,7 +143,7 @@ func TestFilterByAttribute(t *testing.T) {
 	attributeName := "20000733_lactoseFreeClaim"
 	attributeValue := "30002654_yes"
 
-	rep := getRepositoryWithFixturesLoaded(t, "products2.csv")
+	rep := getRepositoryWithFixturesLoaded(t, "products.csv")
 
 	attributeFilter := searchDomain.NewKeyValueFilter(attributeName, []string{attributeValue})
 	productHits, err := rep.Find(context.Background(), attributeFilter)
@@ -200,8 +200,8 @@ func getRepositoryWithFixturesLoaded(t *testing.T, productCsv string) *productse
 		}{
 			Currency:             "GBP",
 			Locale:               "en_GB",
-			ProductCsvFile:       "fixture/" + productCsv,
-			CategoryCsvFile:      "fixture/categories.csv",
+			ProductCsvFile:       "../testdata/" + productCsv,
+			CategoryCsvFile:      "../testdata/categories.csv",
 			ProductCsvDelimiter:  ",",
 			CategoryCsvDelimiter: ",",
 		},
