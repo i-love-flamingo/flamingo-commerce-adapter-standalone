@@ -13,8 +13,8 @@ import (
 
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/domain"
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/category"
+	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/commercesearch"
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/product"
-	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/productsearch"
 	"flamingo.me/flamingo-commerce-adapter-standalone/commercesearch/infrastructure/search"
 )
 
@@ -81,11 +81,11 @@ func (m *Module) Configure(injector *dingo.Injector) {
 
 	switch m.repositoryAdapter {
 	case "bleve":
-		injector.Bind((*domain.ProductRepository)(nil)).To(productsearch.BleveRepository{}).In(dingo.ChildSingleton)
-		injector.Bind((*domain.CategoryRepository)(nil)).To(productsearch.BleveRepository{}).In(dingo.ChildSingleton)
+		injector.Bind((*domain.ProductRepository)(nil)).To(commercesearch.BleveRepository{}).In(dingo.ChildSingleton)
+		injector.Bind((*domain.CategoryRepository)(nil)).To(commercesearch.BleveRepository{}).In(dingo.ChildSingleton)
 	default:
-		injector.Bind((*domain.ProductRepository)(nil)).To(productsearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
-		injector.Bind((*domain.CategoryRepository)(nil)).To(productsearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
+		injector.Bind((*domain.ProductRepository)(nil)).To(commercesearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
+		injector.Bind((*domain.CategoryRepository)(nil)).To(commercesearch.InMemoryProductRepository{}).In(dingo.ChildSingleton)
 	}
 }
 
@@ -111,7 +111,7 @@ func (*Module) CueConfig() string {
 	return `
 flamingoCommerceAdapterStandalone: {
 	commercesearch: {
-		enableIndexing: bool | *false
+		enableIndexing: bool | *true
 		repositoryAdapter: "bleve" | *"inmemory"
 		bleveAdapter: {
 			productsToParentCategories: bool | *true

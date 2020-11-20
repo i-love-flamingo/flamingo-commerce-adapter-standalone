@@ -1,4 +1,4 @@
-package productsearch
+package commercesearch
 
 import (
 	"bytes"
