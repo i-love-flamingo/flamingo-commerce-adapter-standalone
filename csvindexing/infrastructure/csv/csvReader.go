@@ -32,6 +32,7 @@ func ReadCSV(csvFile string, options ...ReadOption) ([]RowDto, error) {
 		log.Printf("Error - RowDto %v", err)
 		return nil, err
 	}
+	defer f.Close()
 
 	var csvContents []RowDto
 	var headerRow []string
