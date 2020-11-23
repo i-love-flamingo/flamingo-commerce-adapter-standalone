@@ -24,6 +24,7 @@ import (
 // prepareBigCSV takes the header of the products.csv and creates a CSV with n products which are a copy from
 // the last row of products.csv with just an incremented SKU
 func prepareBigCSV(b *testing.B, n int) {
+	b.Helper()
 	in, _ := os.Open("../../testdata/products.csv")
 	defer in.Close()
 
@@ -184,6 +185,7 @@ func BenchmarkIndexUpdater_IndexXL10000(b *testing.B) {
 }
 
 func benchmarkIndexer(b *testing.B, productsCsv string, categoriesCsv string, checkMarketplaceCode string) {
+	b.Helper()
 	for n := 0; n < b.N; n++ {
 		rep := new(productsearch.BleveRepository).Inject(
 			new(flamingo.NullLogger),
