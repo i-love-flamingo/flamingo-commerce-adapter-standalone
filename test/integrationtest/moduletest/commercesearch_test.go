@@ -48,7 +48,6 @@ func Test_BleveAndInMemoryAdapter(t *testing.T) {
 
 	for adapter, info := range adapters {
 		t.Run(adapter+":Empty search returns all results", func(t *testing.T) {
-			t.Parallel()
 			e := integrationtest.NewHTTPExpect(t, "http://"+info.BaseURL)
 			expect := e.GET("/search").Expect()
 			productsResult := expect.Status(http.StatusOK).JSON().Object().Value("SearchResult").Object().Value("products").Object()
@@ -60,7 +59,6 @@ func Test_BleveAndInMemoryAdapter(t *testing.T) {
 		})
 
 		t.Run(adapter+":Search with query returns all matching results", func(t *testing.T) {
-			t.Parallel()
 			e := integrationtest.NewHTTPExpect(t, "http://"+info.BaseURL)
 			expect := e.GET("/search").WithQueryString("q=Refrigerator").Expect()
 			productsResult := expect.Status(http.StatusOK).JSON().Object().Value("SearchResult").Object().Value("products").Object()
@@ -72,7 +70,6 @@ func Test_BleveAndInMemoryAdapter(t *testing.T) {
 		})
 
 		t.Run(adapter+":Search with pagination works", func(t *testing.T) {
-			t.Parallel()
 			e := integrationtest.NewHTTPExpect(t, "http://"+info.BaseURL)
 			expect := e.GET("/search").WithQueryString("page=2").Expect()
 			productsResult := expect.Status(http.StatusOK).JSON().Object().Value("SearchResult").Object().Value("products").Object()

@@ -21,3 +21,6 @@ test:
 	find . -type f -name '*.go' | xargs go run github.com/client9/misspell/cmd/misspell -error
 	find . -type f -name '*.md' | xargs go run github.com/client9/misspell/cmd/misspell -error
 	ineffassign .
+
+integrationtest:
+	go test -race -v ./test/integrationtest/... -tags=integration
