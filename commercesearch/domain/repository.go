@@ -16,6 +16,7 @@ type (
 		PrepareIndex(ctx context.Context) error
 		UpdateProducts(ctx context.Context, products []domain.BasicProduct) error
 		ClearProducts(ctx context.Context, productIds []string) error
+		DocumentsCount() int64
 	}
 
 	// CategoryRepository port

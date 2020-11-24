@@ -60,6 +60,11 @@ func (r *InMemoryProductRepository) Inject(logger flamingo.Logger) {
 	r.logger = logger.WithField(flamingo.LogKeyModule, "flamingo-commerce-adapter-standalone").WithField(flamingo.LogKeyCategory, "InMemoryProductRepository")
 }
 
+// DocumentsCount returns the number of documents in the index
+func (r *InMemoryProductRepository) DocumentsCount() int64 {
+	return int64(len(r.marketplaceCodeIndex))
+}
+
 // UpdateByCategoryTeasers updates or appends a category to the Product Repository
 func (r *InMemoryProductRepository) UpdateByCategoryTeasers(_ context.Context, categoryTeasers []productDomain.CategoryTeaser) error {
 	for _, categoryTeaser := range categoryTeasers {

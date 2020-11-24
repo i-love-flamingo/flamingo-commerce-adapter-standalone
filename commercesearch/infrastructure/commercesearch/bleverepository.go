@@ -161,6 +161,13 @@ func (r *BleveRepository) getIndex() (bleve.Index, error) {
 
 }
 
+// DocumentsCount returns the number of documents in the index
+func (r *BleveRepository) DocumentsCount() int64 {
+	c, _ := r.index.DocCount()
+
+	return int64(c)
+}
+
 // UpdateByCategoryTeasers updates or appends a category to the Product Repository
 func (r *BleveRepository) UpdateByCategoryTeasers(_ context.Context, categoryTeasers []productDomain.CategoryTeaser) error {
 	index, err := r.getIndex()
