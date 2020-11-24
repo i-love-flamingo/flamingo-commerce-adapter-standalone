@@ -18,5 +18,6 @@ test:
 	go test -race -v ./...
 	gofmt -l -e -d .
 	golint ./...
-	misspell -error .
+	find . -type f -name '*.go' | xargs go run github.com/client9/misspell/cmd/misspell -error
+	find . -type f -name '*.md' | xargs go run github.com/client9/misspell/cmd/misspell -error
 	ineffassign .
