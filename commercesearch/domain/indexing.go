@@ -8,6 +8,9 @@ import (
 	categoryDomain "flamingo.me/flamingo-commerce/v3/category/domain"
 	product "flamingo.me/flamingo-commerce/v3/product/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
+	"flamingo.me/flamingo/v3/framework/opencensus"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
 )
 
 type (
@@ -52,7 +55,18 @@ type (
 	}
 )
 
-var mutex sync.Mutex
+var (
+	mutex sync.Mutex
+
+	docCount = stats.Int64("flamingo-commerce-adapter-standalone/commercesearch/products/doc_count", "Number of product documents in the index", stats.UnitDimensionless)
+)
+
+func init() {
+	err := opencensus.View(docCount.Name(), docCount, view.LastValue())
+	if err != nil {
+		panic(err)
+	}
+}
 
 // Inject for Indexer
 func (i *Indexer) Inject(logger flamingo.Logger, productRepository ProductRepository,
@@ -112,7 +126,10 @@ func (i *Indexer) UpdateProductAndCategory(ctx context.Context, product product.
 	if product.BaseData().MainCategory.Code != "" {
 		i.batchCatQueue = append(i.batchCatQueue, product.BaseData().MainCategory)
 	}
-	return i.commit(ctx)
+	err := i.commit(ctx)
+	stats.Record(ctx, docCount.M(i.productRepository.DocumentsCount()))
+
+	return err
 }
 
 // Inject dependencies
