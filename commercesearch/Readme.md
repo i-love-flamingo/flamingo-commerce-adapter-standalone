@@ -16,6 +16,8 @@ The available products need to be indexed first and will be stored in a `Product
 The module also provides an adapter to receive categories and Category Trees and provides an Adapter for the Flamingo
 Commerce CategoryService (flamingo.me/flamingo-commerce/v3/category/domain)
 
+The total document count is also exposed as metric under `flamingo-commerce-adapter-standalone/commercesearch/products/doc_count`.
+
 ## Indexing
 
 The indexing itself is not part of that module - because the indexing source might be something project specific.
