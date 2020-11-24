@@ -23,4 +23,4 @@ test:
 	ineffassign .
 
 integrationtest:
-	go test -race -v ./test/integrationtest/... -tags=integration
+	go test -test.count=10 -race -v ./test/integrationtest/... -tags=integration
