@@ -1,6 +1,6 @@
-.PHONY: local
-REPLACE?=-replace flamingo.me/flamingo/v3=../flamingo -replace flamingo.me/flamingo-commerce/v3=../flamingo-commerce -replace flamingo.me/form=../form
-DROPREPLACE?=-dropreplace flamingo.me/flamingo/v3 -dropreplace flamingo.me/flamingo-commerce/v3 -dropreplace flamingo.me/form
+.PHONY: local unlocal test
+REPLACE?=-replace flamingo.me/flamingo/v3=../flamingo -replace flamingo.me/flamingo-commerce/v3=../flamingo-commerce
+DROPREPLACE?=-dropreplace flamingo.me/flamingo/v3 -dropreplace flamingo.me/flamingo-commerce/v3
 
 local:
 	git config filter.gomod-commerceadapter-standalone.smudge 'go mod edit -fmt -print $(REPLACE) /dev/stdin'
