@@ -337,14 +337,14 @@ func (f *IndexUpdater) buildSimpleProduct(row map[string]string, locale string, 
 // getMedia gets the Product Images from a map of strings (previously a CSV Row)
 func (f *IndexUpdater) getMedia(row map[string]string, locale string) []domain.Media {
 	var medias []domain.Media
-	if v, ok := row["listImage"]; ok {
+	if v, ok := row["listImage"]; ok && v != "" {
 		medias = append(medias, domain.Media{
 			Type:      "csvCommerceReference",
 			Reference: v,
 			Usage:     domain.MediaUsageList,
 		})
 	}
-	if v, ok := row["thumbnailImage"]; ok {
+	if v, ok := row["thumbnailImage"]; ok && v != "" {
 		medias = append(medias, domain.Media{
 			Type:      "csvCommerceReference",
 			Reference: v,
@@ -352,7 +352,7 @@ func (f *IndexUpdater) getMedia(row map[string]string, locale string) []domain.M
 		})
 	}
 	for _, dk := range []string{"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"} {
-		if v, ok := row["detailImage"+dk]; ok {
+		if v, ok := row["detailImage"+dk]; ok && v != "" {
 			medias = append(medias, domain.Media{
 				Type:      "csvCommerceReference",
 				Reference: v,
