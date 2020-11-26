@@ -192,8 +192,8 @@ func (f *IndexUpdater) validateRow(row map[string]string, locale string, currenc
 			"price-" + currency,
 		}...)
 	for _, requiredAttribute := range additionalRequiredCols {
-		if _, ok := row[requiredAttribute]; !ok {
-			return fmt.Errorf("required attribute %q is missing", requiredAttribute)
+		if val, ok := row[requiredAttribute]; !ok || val == "" {
+			return fmt.Errorf("required column %q is missing", requiredAttribute)
 		}
 	}
 
@@ -205,6 +205,10 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 	attributes := make(map[string]domain.Attribute)
 
 	for key, data := range row {
+		// skip empty fields
+		if data == "" {
+			continue
+		}
 
 		// skip other locales
 		parts := strings.Split(key, "-")
@@ -299,12 +303,12 @@ func (f *IndexUpdater) buildSimpleProduct(row map[string]string, locale string, 
 	}
 
 	saleableFrom := time.Time{}
-	if from, ok := row["saleableFromDate"]; ok {
+	if from, ok := row["saleableFromDate"]; ok && from != "" {
 		saleableFrom, _ = time.Parse(time.RFC3339, from)
 	}
 
 	saleableTo := time.Time{}
-	if from, ok := row["saleableToDate"]; ok {
+	if from, ok := row["saleableToDate"]; ok && from != "" {
 		saleableTo, _ = time.Parse(time.RFC3339, from)
 	}
 
