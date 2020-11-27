@@ -1,6 +1,6 @@
-.PHONY: local
-REPLACE?=-replace flamingo.me/flamingo/v3=../flamingo -replace flamingo.me/flamingo-commerce/v3=../flamingo-commerce -replace flamingo.me/form=../form
-DROPREPLACE?=-dropreplace flamingo.me/flamingo/v3 -dropreplace flamingo.me/flamingo-commerce/v3 -dropreplace flamingo.me/form
+.PHONY: local unlocal test
+REPLACE?=-replace flamingo.me/flamingo/v3=../flamingo -replace flamingo.me/flamingo-commerce/v3=../flamingo-commerce
+DROPREPLACE?=-dropreplace flamingo.me/flamingo/v3 -dropreplace flamingo.me/flamingo-commerce/v3
 
 local:
 	git config filter.gomod-commerceadapter-standalone.smudge 'go mod edit -fmt -print $(REPLACE) /dev/stdin'
@@ -18,5 +18,9 @@ test:
 	go test -race -v ./...
 	gofmt -l -e -d .
 	golint ./...
-	misspell -error .
+	find . -type f -name '*.go' | xargs go run github.com/client9/misspell/cmd/misspell -error
+	find . -type f -name '*.md' | xargs go run github.com/client9/misspell/cmd/misspell -error
 	ineffassign .
+
+integrationtest:
+	go test -test.count=10 -race -v ./test/integrationtest/... -tags=integration

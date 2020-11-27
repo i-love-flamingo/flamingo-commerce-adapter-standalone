@@ -23,6 +23,20 @@ jobs:
         run: go get -v -t -d ./...
       - name: Test
         run: go test -race ./...
+  integration-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.*' ]
+    name: Run integration tests
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Test
+        run: go test -test.count=10 -race -v ./test/integrationtest/... -tags=integration
   static-checks:
     runs-on: ubuntu-latest
     strategy:
