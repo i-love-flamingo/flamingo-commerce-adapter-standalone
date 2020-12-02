@@ -52,6 +52,7 @@ func testSearchWithQueryReturnsAllMatchingProducts(info integrationtest.BootupIn
 		product.Value("Attributes").Object().Value("gtin").Object().Value("Label").String().Equal("189905108817")
 		product.Value("Attributes").Object().Value("gtin").Object().Value("Code").String().Equal("gtin")
 		product.Value("Media").Array().Length().Equal(3)
+		product.Value("Keywords").Array().ContainsOnly("keyword1", "keyword2")
 		product.Value("ActivePrice").Object().Value("Default").Object().Value("Amount").String().Equal("132.31")
 		product.Value("ActivePrice").Object().Value("Discounted").Object().Value("Amount").String().Equal("115")
 		product.Value("ActivePrice").Object().Value("Default").Object().Value("Currency").String().Equal("GBP")

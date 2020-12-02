@@ -186,10 +186,7 @@ func (f *IndexUpdater) validateRow(row map[string]string, locale string, currenc
 			"marketplaceCode",
 			"retailerCode",
 			"title-" + locale,
-			"metaKeywords-" + locale,
-			"shortDescription-" + locale,
 			"description-" + locale,
-			"price-" + currency,
 		}...)
 	for _, requiredAttribute := range additionalRequiredCols {
 		if val, ok := row[requiredAttribute]; !ok || val == "" {
@@ -268,7 +265,7 @@ func (f *IndexUpdater) getBasicProductData(row map[string]string, locale string,
 		Description:      row["description-"+locale],
 		RetailerName:     row["retailerName"],
 		Media:            f.getMedia(row, locale),
-		Keywords:         strings.Split("metaKeywords-"+locale, ","),
+		Keywords:         strings.Split(row["metaKeywords-"+locale], ","),
 		Attributes:       attributes,
 		StockLevel:       stockLevel,
 	}
@@ -285,7 +282,7 @@ func (f *IndexUpdater) getIdentifier(row map[string]string) string {
 
 // buildSimpleProduct builds a Product of the Simple Type from a map of strings (previously a CSV Row)
 func (f *IndexUpdater) buildSimpleProduct(row map[string]string, locale string, currency string, tree categorydomain.Tree) (*domain.SimpleProduct, error) {
-	err := f.validateRow(row, locale, currency, nil)
+	err := f.validateRow(row, locale, currency, []string{"price-" + currency})
 	if err != nil {
 		return nil, err
 	}
