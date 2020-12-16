@@ -207,6 +207,8 @@ func benchmarkIndexer(b *testing.B, productsCsv string, categoriesCsv string, ch
 
 		indexUpdater.Inject(flamingo.NullLogger{},
 			&domain.CategoryTreeBuilder{},
+			nil,
+			nil,
 			&struct {
 				ProductCsvFile           string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.path"`
 				ProductCsvDelimiter      string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.delimiter"`
