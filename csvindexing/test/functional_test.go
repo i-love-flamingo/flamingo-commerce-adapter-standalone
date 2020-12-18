@@ -189,6 +189,8 @@ func getRepositoryWithFixturesLoaded(t *testing.T, productCsv string) *commerces
 	loader := csvcommerceLoader.IndexUpdater{}
 	loader.Inject(flamingo.NullLogger{},
 		&domain2.CategoryTreeBuilder{},
+		nil,
+		nil,
 		&struct {
 			ProductCsvFile           string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.path"`
 			ProductCsvDelimiter      string       `inject:"config:flamingoCommerceAdapterStandalone.csvindexing.products.file.delimiter"`
