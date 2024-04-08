@@ -1,6 +1,22 @@
 # Changelog
 
-## v0.0.3-beta [upcoming]
+## v0.0.6-beta [ upcoming ]
+
+## v0.0.5-beta
+
+* Update flamingo-commerce version
+* Update flamingo version
+* Update go version
+
+## v0.0.4-beta
+
+* Several bugfixes
+* Add benchmark test for bleve indexing
+* Use right delimiter for csv files
+* Make bleve key value filters disjunctive
+* Implement documents count metric
+
+## v0.0.3-beta
 
 * Update Readme's to reflect current configs / fix typos
 * Update CueConfig to match used configurations
