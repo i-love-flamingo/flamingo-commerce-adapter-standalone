@@ -373,14 +373,12 @@ func (r *InMemoryProductRepository) updateCategoryIndex(tree *categoryDomain.Tre
 	}
 }
 
-/**
-  sub_sub --parent--> sub --parent--> root
+/*
+sub_sub --parent--> sub --parent--> root
 
+Passed is "sub_sub"
 
-  Passed is "sub_sub"
-
-  Returned is "root"
-
+Returned is "root"
 */
 func (r *InMemoryProductRepository) categoryTeaserToCategoryTree(teaser productDomain.CategoryTeaser, child *categoryDomain.TreeData) *categoryDomain.TreeData {
 	if teaser.Code == "" {
