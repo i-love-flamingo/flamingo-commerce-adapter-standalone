@@ -126,15 +126,17 @@ func (e *PlaceOrderServiceAdapter) placeOrder(ctx context.Context, cart *cartDom
 
 // checkPayment
 func (e *PlaceOrderServiceAdapter) checkPayment(cart *cartDomain.Cart, payment *placeorder.Payment) error {
-	if payment == nil && cart.GrandTotal().IsPositive() {
+	if payment == nil && cart.GrandTotal.IsPositive() {
 		return errors.New("No valid Payment given")
 	}
-	if cart.GrandTotal().IsPositive() {
+
+	if cart.GrandTotal.IsPositive() {
 		totalPrice, err := payment.TotalValue()
 		if err != nil {
 			return err
 		}
-		if !totalPrice.Equal(cart.GrandTotal()) {
+
+		if !totalPrice.Equal(cart.GrandTotal) {
 			return errors.New("Payment Total does not match with Grandtotal")
 		}
 	}
