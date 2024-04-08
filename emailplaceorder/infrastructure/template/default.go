@@ -2,15 +2,17 @@ package template
 
 import (
 	"bytes"
-	"flamingo.me/flamingo-commerce-adapter-standalone/emailplaceorder/infrastructure"
+	"html/template"
+	"strings"
+
 	cartDomain "flamingo.me/flamingo-commerce/v3/cart/domain/cart"
 	"flamingo.me/flamingo-commerce/v3/cart/domain/placeorder"
 	"flamingo.me/flamingo-commerce/v3/price/domain"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"github.com/Masterminds/sprig"
 	"github.com/vanng822/go-premailer/premailer"
-	"html/template"
-	"strings"
+
+	"flamingo.me/flamingo-commerce-adapter-standalone/emailplaceorder/infrastructure"
 )
 
 type (
@@ -365,7 +367,7 @@ func (d *Default) WrapHTMLTemplate(content string, footer string) string {
 	return template
 }
 
-//BasketTemplate helper
+// BasketTemplate helper
 func (d *Default) BasketTemplate() string {
 
 	return `
@@ -435,7 +437,7 @@ func (d *Default) BasketTemplate() string {
 `
 }
 
-//AddressTemplate helper
+// AddressTemplate helper
 func (d *Default) AddressTemplate() string {
 	return `
 {{ .Salutation }} {{ .Title }} {{ .Firstname }} {{ .MiddleName }} {{ .Lastname }} <br>
@@ -452,7 +454,7 @@ func (d *Default) AddressTemplate() string {
 `
 }
 
-//GenerateTemplate triggers go template rendering and passes the variables and some additional templatefuncs to it
+// GenerateTemplate triggers go template rendering and passes the variables and some additional templatefuncs to it
 func (d *Default) GenerateTemplate(cart *cartDomain.Cart, payment *placeorder.Payment, tplt string) (string, error) {
 
 	// Generate the email from Golang template
