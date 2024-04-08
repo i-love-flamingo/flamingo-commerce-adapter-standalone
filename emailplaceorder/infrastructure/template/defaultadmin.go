@@ -1,10 +1,12 @@
 package template
 
 import (
-	"flamingo.me/flamingo-commerce-adapter-standalone/emailplaceorder/infrastructure"
+	"fmt"
+
 	cartDomain "flamingo.me/flamingo-commerce/v3/cart/domain/cart"
 	"flamingo.me/flamingo-commerce/v3/cart/domain/placeorder"
-	"fmt"
+
+	"flamingo.me/flamingo-commerce-adapter-standalone/emailplaceorder/infrastructure"
 )
 
 // AdminMail for store owner
@@ -30,7 +32,7 @@ func (d *Default) AdminMail(cart *cartDomain.Cart, payment *placeorder.Payment) 
 	}
 	return &infrastructure.Mail{
 		HTML:    result,
-		Plain:   fmt.Sprintf("You received an order for %v / Total: %v", cart.GetContactMail(), d.priceFormat.FormatPrice(cart.GrandTotal())),
+		Plain:   fmt.Sprintf("You received an order for %v / Total: %v", cart.GetContactMail(), d.priceFormat.FormatPrice(cart.GrandTotal)),
 		Subject: fmt.Sprintf("You received an order - %v", cart.GetPaymentReference()),
 	}, nil
 }

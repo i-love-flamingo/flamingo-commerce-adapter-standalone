@@ -416,10 +416,10 @@ func (d *Default) BasketTemplate() string {
 									<tr>
 										<th colspan="4"><br>Summary</th>
 									</tr>
-									{{ if not .Cart.SumTotalDiscountAmount.IsZero }}
+									{{ if not .Cart.TotalDiscountAmount.IsZero }}
 										<tr>
 											<td colspan="3">Discounts</td>
-											<td style="text-align:right">{{ priceFormat .Cart.SumTotalDiscountAmount }}</td>
+											<td style="text-align:right">{{ priceFormat .Cart.TotalDiscountAmount }}</td>
 										</tr>
 									{{ end }}
 									<tr>

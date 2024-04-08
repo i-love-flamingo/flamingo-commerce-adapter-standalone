@@ -47,8 +47,8 @@ func TestPlaceOrderServiceAdapter_PlaceGuestCart(t *testing.T) {
 				placeorder.Transaction{
 					Method:            "testmethod",
 					Status:            placeorder.PaymentStatusOpen,
-					ValuedAmountPayed: exampleCart.GrandTotal(),
-					AmountPayed:       exampleCart.GrandTotal(),
+					ValuedAmountPayed: exampleCart.GrandTotal,
+					AmountPayed:       exampleCart.GrandTotal,
 					TransactionID:     "t1",
 				},
 			},
@@ -74,8 +74,8 @@ func TestPlaceOrderServiceAdapter_PlaceGuestCart(t *testing.T) {
 				placeorder.Transaction{
 					Method:            "testmethod",
 					Status:            placeorder.PaymentStatusOpen,
-					ValuedAmountPayed: exampleCart.GrandTotal(),
-					AmountPayed:       exampleCart.GrandTotal(),
+					ValuedAmountPayed: exampleCart.GrandTotal,
+					AmountPayed:       exampleCart.GrandTotal,
 					TransactionID:     "t1",
 				},
 			},

@@ -695,7 +695,7 @@ func (r *BleveRepository) mapBleveResultToResult(searchResults *bleve.SearchResu
 		}
 
 		facet := searchDomain.Facet{
-			Type:     string(searchDomain.TreeFacet),
+			Type:     searchDomain.TreeFacet,
 			Name:     "category",
 			Label:    "category",
 			Items:    constructedItems,
@@ -710,7 +710,7 @@ func (r *BleveRepository) mapBleveResultToResult(searchResults *bleve.SearchResu
 			r.logger.Warn("No facet result for configured facet ", facetConfig.AttributeCode)
 		}
 		facet := searchDomain.Facet{
-			Type:     string(searchDomain.ListFacet),
+			Type:     searchDomain.ListFacet,
 			Name:     facetConfig.AttributeCode,
 			Label:    facetConfig.AttributeCode,
 			Position: 0,

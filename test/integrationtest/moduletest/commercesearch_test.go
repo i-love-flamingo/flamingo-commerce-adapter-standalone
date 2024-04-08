@@ -55,7 +55,7 @@ func testSearchWithQueryReturnsAllMatchingProducts(info integrationtest.BootupIn
 		product.Value("Media").Array().Length().Equal(3)
 		product.Value("Keywords").Array().ContainsOnly("keyword1", "keyword2")
 		product.Value("ActivePrice").Object().Value("Default").Object().Value("Amount").String().Equal("132.31")
-		product.Value("ActivePrice").Object().Value("Discounted").Object().Value("Amount").String().Equal("115")
+		product.Value("ActivePrice").Object().Value("Discounted").Object().Value("Amount").String().Equal("115.00")
 		product.Value("ActivePrice").Object().Value("Default").Object().Value("Currency").String().Equal("GBP")
 		product.Value("ActivePrice").Object().Value("Discounted").Object().Value("Currency").String().Equal("GBP")
 		product.Value("ActivePrice").Object().Value("IsDiscounted").Boolean().Equal(true)
