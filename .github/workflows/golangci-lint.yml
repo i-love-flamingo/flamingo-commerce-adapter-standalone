@@ -5,6 +5,7 @@ on:
       - v*
     branches:
       - master
+      - main
   pull_request:
 permissions:
   contents: read
@@ -19,19 +20,9 @@ jobs:
           fetch-depth: '0'
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.x'
+          go-version: 1.x
           check-latest: true
-      - name: Echo start commit
-        run: |
-              # finds your first commit ahead from master then finds revision before your first commit to be used as starting point for linter
-              - export FIRST_COMMIT=$(git rev-list --topo-order origin/master..HEAD | tail -1)
-              - if [ "$FIRST_COMMIT" == "" ]; then FIRST_COMMIT="origin/master"; fi
-              - echo $FIRST_COMMIT
-              - export REV=$(git rev-parse $FIRST_COMMIT^1)
-              - if [ "$REV" == "" ]; then echo "revision not found"; else echo "used revision number $REV"; fi
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: 'v1.55'
-          args: $(if [[ $REV != '' ]]; then echo --new-from-rev=$REV; fi)
-
+          version: v2.1
