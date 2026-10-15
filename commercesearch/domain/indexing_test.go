@@ -1,10 +1,11 @@
 package domain
 
 import (
+	"testing"
+
 	"flamingo.me/flamingo-commerce/v3/category/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestCategoryTreeBuilder_BuildTreeWithoutExplicitGivenRoot(t *testing.T) {
